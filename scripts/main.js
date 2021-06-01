@@ -1,4 +1,46 @@
-document.querySelector("#")
+function add_dict_elements(selector, dict){
+    for (const key in dict){
+        // console.log([key, dict[key]])
+        let div = document.createElement("div")
+
+        let label = document.createElement("label")
+        label.for = key
+        label.textContent = dict[key]["display_name"] + ":"
+
+        let input = document.createElement("input")
+        input.type = "number"
+        input.id = key
+        input.name = key
+        
+        div.appendChild(label)
+        div.appendChild(input)
+
+        if ("default_fixed_value" in dict[key]){
+            let fixed_label = document.createElement("label")
+            fixed_label.for = key + "_fixed"
+            fixed_label.textContent = "Fixed:"
+
+            let fixed_input = document.createElement("input")
+            fixed_input.type = "checkbox"
+            fixed_input.checked = dict[key]["default_fixed_value"]
+            fixed_input.id = key + "_fixed"
+            fixed_input.name = key
+
+            div.appendChild(fixed_label)
+            div.appendChild(fixed_input)
+        }
+
+        document.querySelector(selector).appendChild(div)
+    }
+}
+
+// document.querySelector("#inputs_monthly_overhead").appendChild(test_element)
+
+fetch("./data/monthly_overhead.json")
+.then(response => {
+    return response.json()
+})
+.then(data => add_dict_elements("#inputs_monthly_overhead", data[0]))
 
 // function add(number1, number2){
 //     return number1 + number2
