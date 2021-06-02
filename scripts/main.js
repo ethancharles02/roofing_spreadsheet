@@ -1,91 +1,219 @@
 // Add default values to json (if Shawn wants that)
 // Implement default values for new inputs
+
 // Add formatting for accounting values
+// Combine inputs and outputs (but leave the json portions separate). Add new json indicators that will add an input if necessary
+// Put inputs and outputs under "display_values"
+// Specify formatting in json (display_format?) Currencies, Ints, and Percentages
+// Move the creation of the h2 element (section name) to only happen if there is a display name (same for others?)
 
-var monthly_overhead_inputs = {}
+// func for getting information from a key inside a nested object
+// function getObject(theObject) {
+//     var result = null;
+//     if(theObject instanceof Array) {
+//         for(var i = 0; i < theObject.length; i++) {
+//             result = getObject(theObject[i]);
+//             if (result) {
+//                 break;
+//             }   
+//         }
+//     }
+//     else
+//     {
+//         for(var prop in theObject) {
+//             console.log(prop + ': ' + theObject[prop]);
+//             if(prop == 'id') {
+//                 if(theObject[prop] == 1) {
+//                     return theObject;
+//                 }
+//             }
+//             if(theObject[prop] instanceof Object || theObject[prop] instanceof Array) {
+//                 result = getObject(theObject[prop]);
+//                 if (result) {
+//                     break;
+//                 }
+//             } 
+//         }
+//     }
+//     return result;
+// }
 
+var data_sheet_input_values = {}
+
+/**
+ * Adds a query to an input text box that will run the given function
+ * @param {string} id The id of the input box (without the #)
+ * @param {string} event The event that will trigger the function (ex. blur, input, focus)
+ * @param {function} func The function that gets triggered
+ */
 function add_query_on_input(id, event, func){
+    // Adds a query onto the element with the given id
     jQuery("#" + id).on(event, func)
 }
 
+/**
+ * Formats a given value into a currency format, the value is expected to already be a valid number (string or float)
+ * @param {(string|float)} value The value to be formatted
+ * @returns {string} The formatted value with a dollar sign in front and to two decimal places
+ */
 function format_value_to_currency(value){
+    // Returns the formatted float with a dollar sign on the front and fixed to 2 decimals
     return "$ " + parseFloat(value).toFixed(2)
 }
 
+/**
+ * Sets the value of the clicked event to the currency formatted version
+ * @param {object} event The event given from jQuery that can be used to find the value
+ */
 function set_event_target_currency(event){
     let value = event.target.value
+    // Checks if the string is a valid number
     if (jQuery.isNumeric(value)){
+        // Sets the value to the formatted version
         event.target.value = format_value_to_currency(event.target.value)
     }
 }
 
+/**
+ * Restricts the input of the target object based on if it is a valid number, if it isn't, it sets the value to the corresponding id value in the data_sheet_input_values object
+ * @param {object} event The event given from jQuery that can be used to find information on the element
+ */
 function restrict_input(event){
     let value = event.target.value
-    let id = event.target.id
+    let target_id = event.target.id
 
+    // The parent id is for the corresponding section that the element comes from (ex. monthly_overhead)
+    let parent_id = event.target.parentElement.parentElement.id
+
+    // If the input isn't a number and isn't an empty string, it reverts it to the previous value
     if (!jQuery.isNumeric(value) && value != ""){
-        event.target.value = monthly_overhead_inputs[id]
+        event.target.value = data_sheet_input_values[parent_id][target_id]
     }
+    // If it is a valid number or an empty string, updates the input values
+    // If the value has a decimal in it, it is stored with the two decimals
+    // If the value is an empty string, the input values only take that string
+    // If the value is an int, it is simply stored as is
     else{
         if (value.includes(".")){
-            monthly_overhead_inputs[id] = parseFloat(value).toFixed(2)
+            data_sheet_input_values[parent_id][target_id] = parseFloat(value).toFixed(2)
         }
         else if(value == ""){
-            monthly_overhead_inputs[id] = value
+            data_sheet_input_values[parent_id][target_id] = value
         }
         else{
-            monthly_overhead_inputs[id] = parseFloat(value)
+            data_sheet_input_values[parent_id][target_id] = parseFloat(value)
         }
     }
 }
 
+/**
+ * For easy editing, this reverts the formatted value of the event object to its raw value equivalent
+ * @param {object} event The event given from jQuery that can be used to find information on the element
+ */
 function focus_input(event){
-    event.target.value = monthly_overhead_inputs[event.target.id]
+    let target_id = event.target.id
+    let parent_id = event.target.parentElement.parentElement.id
+
+    // If the parent id isn't in the input values, it gets updated to include it
+    if (!(parent_id in data_sheet_input_values)){
+        data_sheet_input_values[parent_id] = {}
+    }
+
+    // If there isn't a given value for the target, it adds one as an empty string
+    if (!(target_id in data_sheet_input_values[parent_id])){
+        data_sheet_input_values[parent_id][target_id] = ""
+    }
+    // Updates the value to be the input version of the value
+    event.target.value = data_sheet_input_values[parent_id][target_id]
+    // Selects the whole of the input for easier editing
     event.target.select()
 }
 
+/**
+ * Adds new elements to a given element based on the data_sheet_variables formatting through json
+ * @param {string} selector The id of the element you want to add the new elements on top of
+ * @param {object} dict The object that contains the information for each new element
+ * @param {object} value_dict The object that contains only the raw values for each element id
+ */
 function add_dict_elements(selector, dict, value_dict){
-    for (const key in dict){
-        value_dict[key] = ""
-        let div = document.createElement("div")
+    // Runs through every section in the object (ex. Monthly Overhead, Labor Burden, Annual Profit & Owner Salary, etc.)
+    for (const section in dict){
 
-        let label = document.createElement("label")
-        label.for = key
-        label.textContent = dict[key]["display_name"] + ":"
+        // Creates a new element for the section name (ex. Monthly Overhead)
+        let section_header = document.createElement("h2")
+        // Updates the text content to include the display version of that item
+        section_header.textContent = dict[section]["display_name"]
+        // Adds the element to the selector element
+        document.querySelector(selector).appendChild(section_header)
 
-        let input = document.createElement("input")
-        input.type = "text"
-        input.id = key
-        input.name = key
+        // Runs through each of the section values (ex. display_name, inputs, outputs)
+        for (const section_value in dict[section]){
+            if (section_value == "inputs"){
 
-        div.appendChild(label)
-        div.appendChild(input)
+                let section_value_header = document.createElement("h3")
+                section_value_header.textContent = dict[section][section_value]["display_name"]
+                document.querySelector(selector).appendChild(section_value_header)
 
-        if ("default_fixed_value" in dict[key]){
-            let fixed_label = document.createElement("label")
-            fixed_label.for = key + "_fixed"
-            fixed_label.textContent = "Fixed:"
+                let section_value_article = document.createElement("article")
+                let article_id = section + "_" + section_value
+                section_value_article.id = article_id
+                document.querySelector(selector).appendChild(section_value_article)
 
-            let fixed_input = document.createElement("input")
-            fixed_input.type = "checkbox"
-            fixed_input.checked = dict[key]["default_fixed_value"]
-            fixed_input.id = key + "_fixed"
-            fixed_input.name = key
+                for (const key in dict[section]["inputs"]["display_values"]){
+                    value_dict[key] = ""
+                    let div = document.createElement("div")
 
-            div.appendChild(fixed_label)
-            div.appendChild(fixed_input)
-            
+                    let label = document.createElement("label")
+                    label.for = key
+                    label.textContent = dict[section]["inputs"]["display_values"][key]["display_name"] + ":"
+
+                    let input = document.createElement("input")
+                    input.type = "text"
+                    input.id = key
+                    input.name = key
+
+                    div.appendChild(label)
+                    div.appendChild(input)
+
+                    if ("default_fixed_value" in dict[section]["inputs"]["display_values"][key]){
+                        let fixed_label = document.createElement("label")
+                        fixed_label.for = key + "_fixed"
+                        fixed_label.textContent = "Fixed:"
+
+                        let fixed_input = document.createElement("input")
+                        fixed_input.type = "checkbox"
+                        fixed_input.checked = dict[section]["inputs"]["display_values"][key]["default_fixed_value"]
+                        fixed_input.id = key + "_fixed"
+                        fixed_input.name = key
+
+                        div.appendChild(fixed_label)
+                        div.appendChild(fixed_input)
+                        
+                    }
+                    document.querySelector("#" + article_id).appendChild(div)
+
+                    add_query_on_input(key, "blur", set_event_target_currency)
+                    add_query_on_input(key, "input", restrict_input)
+                    add_query_on_input(key, "focus", focus_input)
+                }
+            }
+            if (section_value == "outputs"){
+                let section_value_header = document.createElement("h3")
+                section_value_header.textContent = dict[section][section_value]["display_name"]
+                document.querySelector(selector).appendChild(section_value_header)
+
+                let section_value_article = document.createElement("article")
+                let article_id = section + "_" + section_value
+                section_value_article.id = article_id
+                document.querySelector(selector).appendChild(section_value_article)
+            }
         }
-        document.querySelector(selector).appendChild(div)
-
-        add_query_on_input(key, "blur", set_event_target_currency)
-        add_query_on_input(key, "input", restrict_input)
-        add_query_on_input(key, "focus", focus_input)
     }
 }
 
-fetch("./data/monthly_overhead.json")
+// Gets the json file and converts it to an array which is used as an argument in the add_dict_elements function
+fetch("./data/data_sheet_variables.json")
 .then(response => {
     return response.json()
 })
-.then(data => add_dict_elements("#inputs_monthly_overhead", data[0], monthly_overhead_inputs))
+.then(data => add_dict_elements("#data_sheet_variables", data[0], data_sheet_input_values))

@@ -1,0 +1,96 @@
+[
+    {
+        "monthly_overhead": {
+            "display_name": "Monthly Overhead",
+            "inputs": {
+                "display_name": "Inputs",
+                "display_values": {
+                    "rent": {
+                        "display_name": "Rent"
+                    },
+                    "insurance": {
+                        "display_name": "Business Insurance"
+                    },
+                    "utilities": {
+                        "display_name": "Utilities"
+                    },
+                    "vehicle_payments": {
+                        "display_name": "Vehicle Payments"
+                    },
+                    "vehicle_insurance": {
+                        "display_name": "Vehicle Insurance"
+                    },
+                    "vehicle_maint_incl_fuel": {
+                        "display_name": "Vehicle Maint/fuel"
+                    },
+                    "hourly_admin_staff": {
+                        "display_name": "Hourly Admin Staff"
+                    },
+                    "office_supplies": {
+                        "display_name": "Office Supplies"
+                    },
+                    "internet_phones_cell": {
+                        "display_name": "Internet/phones/cell",
+                        "default_fixed_value": true
+                    },
+                    "marketing": {
+                        "display_name": "Marketing"
+                    },
+                    "tools": {
+                        "display_name": "Tools"
+                    },
+                    "uniforms": {
+                        "display_name": "Uniforms"
+                    },
+                    "benefits": {
+                        "display_name": "Benefits"
+                    },
+                    "property_taxes": {
+                        "display_name": "Property Taxes"
+                    },
+                    "owner_salary": {
+                        "display_name": "Owner Salary @ $150k",
+                        "default_fixed_value": true
+                    },
+                    "misc1": {
+                        "display_name": "Misc",
+                        "default_fixed_value": false
+                    },
+                    "misc2": {
+                        "display_name": "Misc",
+                        "default_fixed_value": false
+                    },
+                    "misc3": {
+                        "display_name": "Misc",
+                        "default_fixed_value": false
+                    }
+                }
+            },
+            "outputs": {
+                "display_name": "Outputs",
+                "display_values": {
+                    "est_monthly_expenses_fixed": {
+                        "display_name": "Estimated Monthly Expenses Fixed",
+                        "formula": "SUM(B4:B26) FIXED only"
+                    },
+                    "est_monthly_expenses_variable": {
+                        "display_name": "Estimated Monthly Expenses Variable",
+                        "formula": "SUM(B4:B26) VARIABLE only"
+                    },
+                    "est_annual_expenses_fixed": {
+                        "display_name": "Estimated Annual Expenses Fixed",
+                        "formula": "est_monthly_expenses_fixed * 12"
+                    },
+                    "est_annual_expenses_variable": {
+                        "display_name": "Estimated Annual Expenses Variable",
+                        "formula": "est_monthly_expenses_variable * 12"
+                    },
+                    "est_total_annual_expenses": {
+                        "display_name": "Estimated Total Annual Overhead Expenses",
+                        "formula": "est_annual_expenses_fixed + est_annual_expenses_variable"
+                    }
+                }
+            }
+        }
+    }
+]
