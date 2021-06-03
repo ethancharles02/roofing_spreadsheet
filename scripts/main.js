@@ -6,6 +6,8 @@
 // Put inputs and outputs under "display_values"
 // Specify formatting in json (display_format?) Currencies, Ints, and Percentages
 // Move the creation of the h2 element (section name) to only happen if there is a display name (same for others?)
+// Create a function for updating the output values, putting all of the formulas inside a json format wouldn't work easily
+// Merge the input and output name elements creation so that they are just created based on a display_name
 
 // func for getting information from a key inside a nested object
 // function getObject(theObject) {
