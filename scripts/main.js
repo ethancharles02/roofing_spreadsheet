@@ -58,6 +58,15 @@ function add_query_on_input(id, event, func){
 }
 
 /**
+ * 
+ * @param {string} id The id of the element to be checked for changes
+ * @param {function} func The function that gets triggered
+ */
+function add_query_on_change(id, func){
+    jQuery("#" + id).change(func)
+}
+
+/**
  * Formats a given value into a currency format, the value is expected to already be a valid number (string or float)
  * @param {(string|float)} value The value to be formatted
  * @returns {string} The formatted value with a dollar sign in front and to two decimal places
@@ -198,11 +207,18 @@ function add_dict_elements(selector, dict, value_dict){
                         div.appendChild(fixed_label)
                         div.appendChild(fixed_input)
                     }
-                    
+
+                    document.querySelector("#" + article_id).appendChild(div)
+
+                    // text input queries
                     add_query_on_input(key, "blur", set_event_target_currency)
                     add_query_on_input(key, "blur", update_outputs)
                     add_query_on_input(key, "input", restrict_input)
                     add_query_on_input(key, "focus", focus_input)
+
+                    if ("default_fixed_value" in dict[section][section_value]["display_values"][key]){
+                        add_query_on_change(key + "_fixed", update_outputs)
+                    }
                 }
 
                 else if (dict[section][section_value]["display_values"][key]["user_interaction"] == "output"){
@@ -210,9 +226,12 @@ function add_dict_elements(selector, dict, value_dict){
                     output_label.id = key + "_value"
 
                     div.appendChild(output_label)
+                    document.querySelector("#" + article_id).appendChild(div)
                 }
 
-                document.querySelector("#" + article_id).appendChild(div)
+                else {
+                    document.querySelector("#" + article_id).appendChild(div)
+                }
             }
         }
     }
@@ -223,7 +242,8 @@ function update_outputs(){
 }
 
 function update_monthly_overhead_outputs(){
-    console.log(data_sheet_input_values)
+    // console.log(data_sheet_input_values)
+    // console.log(data_sheet_input_values["monthly_overhead_inputs"])
     // document.querySelector("#est_monthly_expenses_fixed_value").textContent = data_sheet_input_values["monthly_overhead"]
 }
 
