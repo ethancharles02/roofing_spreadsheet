@@ -7,78 +7,97 @@
                 "display_values": {
                     "rent": {
                         "display_name": "Rent",
-                        "user_interaction": "input"
+                        "default_fixed_value": true,
+                        "user_interaction": "input",
+                        "default_value": 100
                     },
                     "insurance": {
                         "display_name": "Business Insurance",
+                        "default_fixed_value": true,
                         "user_interaction": "input"
                     },
                     "utilities": {
                         "display_name": "Utilities",
+                        "default_fixed_value": true,
                         "user_interaction": "input"
                     },
                     "vehicle_payments": {
                         "display_name": "Vehicle Payments",
+                        "default_fixed_value": true,
                         "user_interaction": "input"
                     },
                     "vehicle_insurance": {
                         "display_name": "Vehicle Insurance",
+                        "default_fixed_value": true,
                         "user_interaction": "input"
                     },
                     "vehicle_maint_incl_fuel": {
                         "display_name": "Vehicle Maint/fuel",
+                        "default_fixed_value": false,
                         "user_interaction": "input"
                     },
                     "hourly_admin_staff": {
                         "display_name": "Hourly Admin Staff",
+                        "default_fixed_value": false,
                         "user_interaction": "input"
                     },
                     "office_supplies": {
                         "display_name": "Office Supplies",
+                        "default_fixed_value": false,
                         "user_interaction": "input"
                     },
                     "internet_phones_cell": {
                         "display_name": "Internet/phones/cell",
+                        "show_fixed_box": true,
                         "default_fixed_value": true,
                         "user_interaction": "input"
                     },
                     "marketing": {
                         "display_name": "Marketing",
+                        "default_fixed_value": false,
                         "user_interaction": "input"
                     },
                     "tools": {
                         "display_name": "Tools",
+                        "default_fixed_value": false,
                         "user_interaction": "input"
                     },
                     "uniforms": {
                         "display_name": "Uniforms",
+                        "default_fixed_value": false,
                         "user_interaction": "input"
                     },
                     "benefits": {
                         "display_name": "Benefits",
+                        "default_fixed_value": true,
                         "user_interaction": "input"
                     },
                     "property_taxes": {
                         "display_name": "Property Taxes",
+                        "default_fixed_value": true,
                         "user_interaction": "input"
                     },
                     "owner_salary": {
                         "display_name": "Owner Salary @ $150k",
+                        "show_fixed_box": true,
                         "default_fixed_value": true,
                         "user_interaction": "input"
                     },
                     "misc1": {
                         "display_name": "Misc",
+                        "show_fixed_box": true,
                         "default_fixed_value": false,
                         "user_interaction": "input"
                     },
                     "misc2": {
                         "display_name": "Misc",
+                        "show_fixed_box": true,
                         "default_fixed_value": false,
                         "user_interaction": "input"
                     },
                     "misc3": {
                         "display_name": "Misc",
+                        "show_fixed_box": true,
                         "default_fixed_value": false,
                         "user_interaction": "input"
                     }

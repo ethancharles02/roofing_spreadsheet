@@ -2,16 +2,10 @@
 // Implement default values for new inputs
 
 // Add formatting for accounting values
-// Combine inputs and outputs (but leave the json portions separate). Add new json indicators that will add an input if necessary
-// Put inputs and outputs under "display_values"
 // Specify formatting in json (display_format?) Currencies, Ints, and Percentages
 // Move the creation of the h2 element (section name) to only happen if there is a display name (same for others?)
-// Create a function for updating the output values, putting all of the formulas inside a json format wouldn't work easily
-// Merge the input and output name elements creation so that they are just created based on a display_name
 // Check for display name, if not there, use the variable name for display
 // Separate add_dict_elements into smaller functions
-// Fix inputs not getting formatted
-// Change default_fixed_value code to be based off a new very that say whether or not it can be either fixed or variable
 
 // func for getting information from a key inside a nested object
 // function getObject(theObject) {
@@ -44,7 +38,9 @@
 //     return result;
 // }
 
-var data_sheet_input_values = {}
+var data_sheet_values = {}
+var section_values = {}
+var data_sheet_variables_dict = {}
 
 /**
  * Adds a query to an input text box that will run the given function
@@ -90,19 +86,16 @@ function set_event_target_currency(event){
 }
 
 /**
- * Restricts the input of the target object based on if it is a valid number, if it isn't, it sets the value to the corresponding id value in the data_sheet_input_values object
+ * Restricts the input of the target object based on if it is a valid number, if it isn't, it sets the value to the corresponding id value in the data_sheet_values object
  * @param {object} event The event given from jQuery that can be used to find information on the element
  */
 function restrict_input(event){
     let value = event.target.value
     let target_id = event.target.id
 
-    // The parent id is for the corresponding section that the element comes from (ex. monthly_overhead)
-    let parent_id = event.target.parentElement.parentElement.id
-
     // If the input isn't a number and isn't an empty string, it reverts it to the previous value
     if (!jQuery.isNumeric(value) && value != ""){
-        event.target.value = data_sheet_input_values[parent_id][target_id]
+        event.target.value = data_sheet_values[target_id]
     }
     // If it is a valid number or an empty string, updates the input values
     // If the value has a decimal in it, it is stored with the two decimals
@@ -110,13 +103,13 @@ function restrict_input(event){
     // If the value is an int, it is simply stored as is
     else{
         if (value.includes(".")){
-            data_sheet_input_values[parent_id][target_id] = parseFloat(value).toFixed(2)
+            data_sheet_values[target_id] = parseFloat(value).toFixed(2)
         }
         else if(value == ""){
-            data_sheet_input_values[parent_id][target_id] = value
+            data_sheet_values[target_id] = value
         }
         else{
-            data_sheet_input_values[parent_id][target_id] = parseFloat(value)
+            data_sheet_values[target_id] = parseFloat(value)
         }
     }
 }
@@ -127,19 +120,9 @@ function restrict_input(event){
  */
 function focus_input(event){
     let target_id = event.target.id
-    let parent_id = event.target.parentElement.parentElement.id
 
-    // If the parent id isn't in the input values, it gets updated to include it
-    if (!(parent_id in data_sheet_input_values)){
-        data_sheet_input_values[parent_id] = {}
-    }
-
-    // If there isn't a given value for the target, it adds one as an empty string
-    if (!(target_id in data_sheet_input_values[parent_id])){
-        data_sheet_input_values[parent_id][target_id] = ""
-    }
     // Updates the value to be the input version of the value
-    event.target.value = data_sheet_input_values[parent_id][target_id]
+    event.target.value = data_sheet_values[target_id]
     // Selects the whole of the input for easier editing
     event.target.select()
 }
@@ -153,6 +136,7 @@ function focus_input(event){
 function add_dict_elements(selector, dict, value_dict){
     // Runs through every section in the object (ex. Monthly Overhead, Labor Burden, Annual Profit & Owner Salary, etc.)
     for (const section in dict){
+        section_values[section] = {}
 
         // Creates a new element for the section name (ex. Monthly Overhead)
         let section_header = document.createElement("h2")
@@ -163,7 +147,8 @@ function add_dict_elements(selector, dict, value_dict){
 
         // Runs through each of the section values (ex. display_name, inputs, outputs)
         for (const section_value in dict[section]){
-            // console.log(section_value)
+            section_values[section][section_value] = []
+
             let section_value_header = document.createElement("h3")
             section_value_header.textContent = dict[section][section_value]["display_name"]
             document.querySelector(selector).appendChild(section_value_header)
@@ -174,7 +159,8 @@ function add_dict_elements(selector, dict, value_dict){
             document.querySelector(selector).appendChild(section_value_article)
 
             for (const key in dict[section][section_value]["display_values"]){
-                
+                section_values[section][section_value].push(key)
+
                 let div = document.createElement("div")
 
                 let label = document.createElement("label")
@@ -183,41 +169,50 @@ function add_dict_elements(selector, dict, value_dict){
                 div.appendChild(label)
                 
                 if (dict[section][section_value]["display_values"][key]["user_interaction"] == "input"){
-                    value_dict[key] = ""
+                    if ("default_value" in dict[section][section_value]["display_values"][key]){
+                        value_dict[key] = dict[section][section_value]["display_values"][key]["default_value"]
+                    }
+
+                    else{
+                        value_dict[key] = 0
+                    }
+                    
                     
                     let input = document.createElement("input")
                     input.type = "text"
                     input.id = key
                     input.name = key
-
+                    input.value = format_value_to_currency(value_dict[key])
                     
                     div.appendChild(input)
 
-                    if ("default_fixed_value" in dict[section][section_value]["display_values"][key]){
-                        let fixed_label = document.createElement("label")
-                        fixed_label.for = key + "_fixed"
-                        fixed_label.textContent = "Fixed:"
+                    if ("show_fixed_box" in dict[section][section_value]["display_values"][key]){
+                        if (dict[section][section_value]["display_values"][key]["show_fixed_box"]){
+                            let fixed_label = document.createElement("label")
+                            fixed_label.for = key + "_fixed"
+                            fixed_label.textContent = "Fixed:"
 
-                        let fixed_input = document.createElement("input")
-                        fixed_input.type = "checkbox"
-                        fixed_input.checked = dict[section][section_value]["display_values"][key]["default_fixed_value"]
-                        fixed_input.id = key + "_fixed"
-                        fixed_input.name = key
+                            let fixed_input = document.createElement("input")
+                            fixed_input.type = "checkbox"
+                            fixed_input.checked = dict[section][section_value]["display_values"][key]["default_fixed_value"]
+                            fixed_input.id = key + "_fixed"
+                            fixed_input.name = key
 
-                        div.appendChild(fixed_label)
-                        div.appendChild(fixed_input)
+                            div.appendChild(fixed_label)
+                            div.appendChild(fixed_input)
+                        }
                     }
 
                     document.querySelector("#" + article_id).appendChild(div)
 
                     // text input queries
                     add_query_on_input(key, "blur", set_event_target_currency)
-                    add_query_on_input(key, "blur", update_outputs)
+                    add_query_on_input(key, "blur", update_outputs, dict)
                     add_query_on_input(key, "input", restrict_input)
                     add_query_on_input(key, "focus", focus_input)
 
                     if ("default_fixed_value" in dict[section][section_value]["display_values"][key]){
-                        add_query_on_change(key + "_fixed", update_outputs)
+                        add_query_on_change(key + "_fixed", update_outputs, dict)
                     }
                 }
 
@@ -242,9 +237,31 @@ function update_outputs(){
 }
 
 function update_monthly_overhead_outputs(){
-    // console.log(data_sheet_input_values)
-    // console.log(data_sheet_input_values["monthly_overhead_inputs"])
-    // document.querySelector("#est_monthly_expenses_fixed_value").textContent = data_sheet_input_values["monthly_overhead"]
+    let monthly_overhead_fixed_sum = 0
+    let monthly_overhead_variable_sum = 0
+    for (key of section_values["monthly_overhead"]["inputs"]){
+        fixed_input = document.querySelector("#" + key + "_fixed")
+        if (fixed_input){
+            if (fixed_input.checked){
+                monthly_overhead_fixed_sum += data_sheet_values[key]
+            }
+            else{
+                monthly_overhead_variable_sum += data_sheet_values[key]
+            }
+        }
+        else if (data_sheet_variables_dict["monthly_overhead"]["inputs"]["display_values"][key]["default_fixed_value"]){
+            monthly_overhead_fixed_sum += data_sheet_values[key]
+        }
+        else{
+            monthly_overhead_variable_sum += data_sheet_values[key]
+        }
+    }
+
+    document.querySelector("#est_monthly_expenses_fixed_value").textContent = format_value_to_currency(monthly_overhead_fixed_sum)
+    document.querySelector("#est_monthly_expenses_variable_value").textContent = format_value_to_currency(monthly_overhead_variable_sum)
+    // document.querySelector("#est_annual_expenses_fixed_value").textContent =
+    // document.querySelector("#est_annual_expenses_variable_value").textContent =
+    // document.querySelector("#est_total_annual_expenses_value").textContent =
 }
 
 function main(){
@@ -254,7 +271,8 @@ function main(){
         return response.json()
     })
     .then(data => {
-        add_dict_elements("#data_sheet_variables", data[0], data_sheet_input_values)
+        data_sheet_variables_dict = data[0]
+        add_dict_elements("#data_sheet_variables", data_sheet_variables_dict, data_sheet_values)
         update_outputs()
     })
 }
