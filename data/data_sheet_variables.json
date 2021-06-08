@@ -6,63 +6,81 @@
                 "display_name": "Inputs",
                 "display_values": {
                     "rent": {
-                        "display_name": "Rent"
+                        "display_name": "Rent",
+                        "user_interaction": "input"
                     },
                     "insurance": {
-                        "display_name": "Business Insurance"
+                        "display_name": "Business Insurance",
+                        "user_interaction": "input"
                     },
                     "utilities": {
-                        "display_name": "Utilities"
+                        "display_name": "Utilities",
+                        "user_interaction": "input"
                     },
                     "vehicle_payments": {
-                        "display_name": "Vehicle Payments"
+                        "display_name": "Vehicle Payments",
+                        "user_interaction": "input"
                     },
                     "vehicle_insurance": {
-                        "display_name": "Vehicle Insurance"
+                        "display_name": "Vehicle Insurance",
+                        "user_interaction": "input"
                     },
                     "vehicle_maint_incl_fuel": {
-                        "display_name": "Vehicle Maint/fuel"
+                        "display_name": "Vehicle Maint/fuel",
+                        "user_interaction": "input"
                     },
                     "hourly_admin_staff": {
-                        "display_name": "Hourly Admin Staff"
+                        "display_name": "Hourly Admin Staff",
+                        "user_interaction": "input"
                     },
                     "office_supplies": {
-                        "display_name": "Office Supplies"
+                        "display_name": "Office Supplies",
+                        "user_interaction": "input"
                     },
                     "internet_phones_cell": {
                         "display_name": "Internet/phones/cell",
-                        "default_fixed_value": true
+                        "default_fixed_value": true,
+                        "user_interaction": "input"
                     },
                     "marketing": {
-                        "display_name": "Marketing"
+                        "display_name": "Marketing",
+                        "user_interaction": "input"
                     },
                     "tools": {
-                        "display_name": "Tools"
+                        "display_name": "Tools",
+                        "user_interaction": "input"
                     },
                     "uniforms": {
-                        "display_name": "Uniforms"
+                        "display_name": "Uniforms",
+                        "user_interaction": "input"
                     },
                     "benefits": {
-                        "display_name": "Benefits"
+                        "display_name": "Benefits",
+                        "user_interaction": "input"
                     },
                     "property_taxes": {
-                        "display_name": "Property Taxes"
+                        "display_name": "Property Taxes",
+                        "user_interaction": "input"
                     },
                     "owner_salary": {
                         "display_name": "Owner Salary @ $150k",
-                        "default_fixed_value": true
+                        "default_fixed_value": true,
+                        "user_interaction": "input"
                     },
                     "misc1": {
                         "display_name": "Misc",
-                        "default_fixed_value": false
+                        "default_fixed_value": false,
+                        "user_interaction": "input"
                     },
                     "misc2": {
                         "display_name": "Misc",
-                        "default_fixed_value": false
+                        "default_fixed_value": false,
+                        "user_interaction": "input"
                     },
                     "misc3": {
                         "display_name": "Misc",
-                        "default_fixed_value": false
+                        "default_fixed_value": false,
+                        "user_interaction": "input"
                     }
                 }
             },
@@ -71,23 +89,28 @@
                 "display_values": {
                     "est_monthly_expenses_fixed": {
                         "display_name": "Estimated Monthly Expenses Fixed",
-                        "formula": "SUM(B4:B26) FIXED only"
+                        "formula": "SUM(monthly_overhead) FIXED only",
+                        "user_interaction": "output"
                     },
                     "est_monthly_expenses_variable": {
                         "display_name": "Estimated Monthly Expenses Variable",
-                        "formula": "SUM(B4:B26) VARIABLE only"
+                        "formula": "SUM(monthly_overhead) VARIABLE only",
+                        "user_interaction": "output"
                     },
                     "est_annual_expenses_fixed": {
                         "display_name": "Estimated Annual Expenses Fixed",
-                        "formula": "est_monthly_expenses_fixed * 12"
+                        "formula": "est_monthly_expenses_fixed * 12",
+                        "user_interaction": "output"
                     },
                     "est_annual_expenses_variable": {
                         "display_name": "Estimated Annual Expenses Variable",
-                        "formula": "est_monthly_expenses_variable * 12"
+                        "formula": "est_monthly_expenses_variable * 12",
+                        "user_interaction": "output"
                     },
                     "est_total_annual_expenses": {
                         "display_name": "Estimated Total Annual Overhead Expenses",
-                        "formula": "est_annual_expenses_fixed + est_annual_expenses_variable"
+                        "formula": "est_annual_expenses_fixed + est_annual_expenses_variable",
+                        "user_interaction": "output"
                     }
                 }
             }
