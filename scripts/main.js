@@ -6,6 +6,13 @@
 // Move the creation of the h2 element (section name) to only happen if there is a display name (same for others?)
 // Check for display name, if not there, use the variable name for display
 // Separate add_dict_elements into smaller functions
+// Allow for additional items to be added onto the monthly overhead and materials
+// Allow current display values in monthly overhead and materials to be changed
+// Default all values to zero
+// Change total roofing days to also allow for a total to be set (hiding the monthly values if the total is set)
+// Fica, futa, suta, gen liability, workers comp into output values instead of input
+// Rename total burden to tax burden
+// Materials should default to zero, qty, name, and cost should all still be inputs
 
 // func for getting information from a key inside a nested object
 // function getObject(theObject) {
