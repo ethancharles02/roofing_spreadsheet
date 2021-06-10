@@ -1,7 +1,7 @@
 // Add default values to json (if Shawn wants that)
 // Implement default values for new inputs
 
-// Add formatting for accounting values
+// Add formatting for accounting values (place an additional div for input box and a new label that has a dollar sign)
 // Specify formatting in json (display_format?) Currencies, Ints, and Percentages
 // Move the creation of the h2 element (section name) to only happen if there is a display name (same for others?)
 // Check for display name, if not there, use the variable name for display
@@ -55,7 +55,7 @@ var data_sheet_variables_dict = {}
  * @param {string} event The event that will trigger the function (ex. blur, input, focus)
  * @param {function} func The function that gets triggered
  */
-function add_query_on_input(id, event, func){
+function add_query_on_input(id, event, func) {
     // Adds a query onto the element with the given id
     jQuery("#" + id).on(event, func)
 }
@@ -65,30 +65,53 @@ function add_query_on_input(id, event, func){
  * @param {string} id The id of the element to be checked for changes
  * @param {function} func The function that gets triggered
  */
-function add_query_on_change(id, func){
+function add_query_on_change(id, func) {
     jQuery("#" + id).change(func)
 }
 
 /**
  * Formats a given value into a currency format, the value is expected to already be a valid number (string or float)
  * @param {(string|float)} value The value to be formatted
+ * @param {string} [format="float"] The format to be used for the value, defaults to curr (currency), also accepts "int" and "perc"
  * @returns {string} The formatted value with a dollar sign in front and to two decimal places
  */
-function format_value_to_currency(value){
-    // Returns the formatted float with a dollar sign on the front and fixed to 2 decimals
-    return "$ " + parseFloat(value).toFixed(2)
+function format_value(value, format="float") {
+    // Returns the formatted float based on what the format is:
+    //  curr is a currency, fixed to two decimals (ie. 5.00)
+    //  int is an integer, a number (ie. 5)
+    //  float will return the value to two decimals
+    //  perc is a percentage (ie. 0.5 goes to 50%, 50 goes to 50%)
+    //      perc formatting is based on if the value is greater than 1, if it is, it will do that as the percentage, otherwise, it multiplies by 100 and makes that the percent
+    switch (format) {
+        case "curr":
+            return "$ " + parseFloat(value).toFixed(2)
+        case "int":
+            return parseInt(value)
+        case "perc":
+            let perc_value = parseFloat(value)
+            if (perc_value > 1){
+                return perc_value + "%"
+            }
+            else {
+                return perc_value * 100 + "%"
+            }
+        case "float":
+            return parseFloat(value).toFixed(2)
+        default:
+            return "$ " + parseFloat(value).toFixed(2)
+    }
 }
 
 /**
  * Sets the value of the clicked event to the currency formatted version
  * @param {object} event The event given from jQuery that can be used to find the value
  */
-function set_event_target_currency(event){
+function set_event_target_currency(event) {
     let value = event.target.value
     // Checks if the string is a valid number
-    if (jQuery.isNumeric(value)){
+    if (jQuery.isNumeric(value)) {
         // Sets the value to the formatted version
-        event.target.value = format_value_to_currency(event.target.value)
+        event.target.value = format_value(event.target.value)
     }
 }
 
@@ -96,26 +119,26 @@ function set_event_target_currency(event){
  * Restricts the input of the target object based on if it is a valid number, if it isn't, it sets the value to the corresponding id value in the data_sheet_values object
  * @param {object} event The event given from jQuery that can be used to find information on the element
  */
-function restrict_input(event){
+function restrict_input(event) {
     let value = event.target.value
     let target_id = event.target.id
 
     // If the input isn't a number and isn't an empty string, it reverts it to the previous value
-    if (!jQuery.isNumeric(value) && value != ""){
+    if (!jQuery.isNumeric(value) && value != "") {
         event.target.value = data_sheet_values[target_id]
     }
     // If it is a valid number or an empty string, updates the input values
     // If the value has a decimal in it, it is stored with the two decimals
     // If the value is an empty string, the input values only take that string
     // If the value is an int, it is simply stored as is
-    else{
-        if (value.includes(".")){
+    else {
+        if (value.includes(".")) {
             data_sheet_values[target_id] = parseFloat(value).toFixed(2)
         }
-        else if(value == ""){
+        else if(value == "") {
             data_sheet_values[target_id] = value
         }
-        else{
+        else {
             data_sheet_values[target_id] = parseFloat(value)
         }
     }
@@ -125,7 +148,7 @@ function restrict_input(event){
  * For easy editing, this reverts the formatted value of the event object to its raw value equivalent
  * @param {object} event The event given from jQuery that can be used to find information on the element
  */
-function focus_input(event){
+function focus_input(event) {
     let target_id = event.target.id
 
     // Updates the value to be the input version of the value
@@ -135,14 +158,44 @@ function focus_input(event){
 }
 
 /**
+ * Creates a new input based on given values
+ * @param {string} id The id that will be used as the id for the input
+ * @param {string} [name=id] The name that will be used for the input name, defaults to the id
+ * @param {string} [type="text"] Type specifies what the input box's type will be. Defaults to "text"
+ * @param {(string|float)} [value=0] Value decides what the default value for the input will be set to. Defaults to 0
+ * @param {string} [format="float"] Format is the format that will be used with the format_value formula. Defaults to "curr"
+ */
+function create_input(id, name=id, type="text", value=0, format="float") {
+    let input = document.createElement("input")
+    input.type = type
+    input.id = id
+    input.name = name
+    input.value = format_value(value, format)
+    
+    return input
+}
+
+/**
+ * Creates a label to be used with the currency input box
+ * @returns {Element} A label that has a right aligned dollar sign
+ */
+function create_currency_label() {
+    let label = document.createElement("label")
+    label.textContent = "$"
+    label.setAttribute("align", "right")
+
+    return label
+}
+
+/**
  * Adds new elements to a given element based on the data_sheet_variables formatting through json
  * @param {string} selector The id of the element you want to add the new elements on top of
  * @param {object} dict The object that contains the information for each new element
  * @param {object} value_dict The object that contains only the raw values for each element id
  */
-function add_dict_elements(selector, dict, value_dict){
+function add_dict_elements(selector, dict, value_dict) {
     // Runs through every section in the object (ex. Monthly Overhead, Labor Burden, Annual Profit & Owner Salary, etc.)
-    for (const section in dict){
+    for (const section in dict) {
         section_values[section] = {}
 
         // Creates a new element for the section name (ex. Monthly Overhead)
@@ -153,7 +206,7 @@ function add_dict_elements(selector, dict, value_dict){
         document.querySelector(selector).appendChild(section_header)
 
         // Runs through each of the section values (ex. display_name, inputs, outputs)
-        for (const section_value in dict[section]){
+        for (const section_value in dict[section]) {
             section_values[section][section_value] = []
 
             let section_value_header = document.createElement("h3")
@@ -165,7 +218,7 @@ function add_dict_elements(selector, dict, value_dict){
             section_value_article.id = article_id
             document.querySelector(selector).appendChild(section_value_article)
 
-            for (const key in dict[section][section_value]["display_values"]){
+            for (const key in dict[section][section_value]["display_values"]) {
                 section_values[section][section_value].push(key)
 
                 let div = document.createElement("div")
@@ -175,26 +228,52 @@ function add_dict_elements(selector, dict, value_dict){
                 label.textContent = dict[section][section_value]["display_values"][key]["display_name"] + ":"
                 div.appendChild(label)
                 
-                if (dict[section][section_value]["display_values"][key]["user_interaction"] == "input"){
+                if (dict[section][section_value]["display_values"][key]["user_interaction"] == "input") {
                     if ("default_value" in dict[section][section_value]["display_values"][key]){
                         value_dict[key] = dict[section][section_value]["display_values"][key]["default_value"]
                     }
 
-                    else{
+                    else {
                         value_dict[key] = 0
                     }
                     
-                    
-                    let input = document.createElement("input")
-                    input.type = "text"
-                    input.id = key
-                    input.name = key
-                    input.value = format_value_to_currency(value_dict[key])
-                    
-                    div.appendChild(input)
+                    if ("format" in dict[section][section_value]["display_values"][key]) {
+                        let input
+                        let curr_label
+                        switch (dict[section][section_value]["display_values"][key]["format"]) {
+                            case "curr":
+                                input = create_input(key, key, "text", value_dict[key], "float")
+                                curr_label = create_currency_label()
+                                div.appendChild(curr_label)
+                                div.appendChild(input)
+                                break
 
-                    if ("show_fixed_box" in dict[section][section_value]["display_values"][key]){
-                        if (dict[section][section_value]["display_values"][key]["show_fixed_box"]){
+                            case "int":
+                                input = create_input(key, key, "text", value_dict[key], "int")
+                                div.appendChild(input)
+                                break
+
+                            case "perc":
+                                input = create_input(key, key, "text", value_dict[key], "perc")
+                                div.appendChild(input)
+                                break
+
+                            default:
+                                input = create_input(key, key, "text", value_dict[key], "float")
+                                curr_label = create_currency_label()
+                                div.appendChild(curr_label)
+                                div.appendChild(input)
+                        }
+                    }
+                    else {
+                        let input = create_input(key, key, "text", value_dict[key], "float")
+                        let curr_label = create_currency_label()
+                        div.appendChild(curr_label)
+                        div.appendChild(input)
+                    }
+                    
+                    if ("show_fixed_box" in dict[section][section_value]["display_values"][key]) {
+                        if (dict[section][section_value]["display_values"][key]["show_fixed_box"]) {
                             let fixed_label = document.createElement("label")
                             fixed_label.for = key + "_fixed"
                             fixed_label.textContent = "Fixed:"
@@ -218,12 +297,12 @@ function add_dict_elements(selector, dict, value_dict){
                     add_query_on_input(key, "input", restrict_input)
                     add_query_on_input(key, "focus", focus_input)
 
-                    if ("default_fixed_value" in dict[section][section_value]["display_values"][key]){
+                    if ("default_fixed_value" in dict[section][section_value]["display_values"][key]) {
                         add_query_on_change(key + "_fixed", update_outputs, dict)
                     }
                 }
 
-                else if (dict[section][section_value]["display_values"][key]["user_interaction"] == "output"){
+                else if (dict[section][section_value]["display_values"][key]["user_interaction"] == "output") {
                     output_label = document.createElement("label")
                     output_label.id = key + "_value"
 
@@ -239,39 +318,39 @@ function add_dict_elements(selector, dict, value_dict){
     }
 }
 
-function update_outputs(){
+function update_outputs() {
     update_monthly_overhead_outputs()
 }
 
-function update_monthly_overhead_outputs(){
+function update_monthly_overhead_outputs() {
     let monthly_overhead_fixed_sum = 0
     let monthly_overhead_variable_sum = 0
-    for (key of section_values["monthly_overhead"]["inputs"]){
+    for (key of section_values["monthly_overhead"]["inputs"]) {
         fixed_input = document.querySelector("#" + key + "_fixed")
-        if (fixed_input){
-            if (fixed_input.checked){
+        if (fixed_input) {
+            if (fixed_input.checked) {
                 monthly_overhead_fixed_sum += data_sheet_values[key]
             }
-            else{
+            else {
                 monthly_overhead_variable_sum += data_sheet_values[key]
             }
         }
-        else if (data_sheet_variables_dict["monthly_overhead"]["inputs"]["display_values"][key]["default_fixed_value"]){
+        else if (data_sheet_variables_dict["monthly_overhead"]["inputs"]["display_values"][key]["default_fixed_value"]) {
             monthly_overhead_fixed_sum += data_sheet_values[key]
         }
-        else{
+        else {
             monthly_overhead_variable_sum += data_sheet_values[key]
         }
     }
 
-    document.querySelector("#est_monthly_expenses_fixed_value").textContent = format_value_to_currency(monthly_overhead_fixed_sum)
-    document.querySelector("#est_monthly_expenses_variable_value").textContent = format_value_to_currency(monthly_overhead_variable_sum)
+    document.querySelector("#est_monthly_expenses_fixed_value").textContent = format_value(monthly_overhead_fixed_sum)
+    document.querySelector("#est_monthly_expenses_variable_value").textContent = format_value(monthly_overhead_variable_sum)
     // document.querySelector("#est_annual_expenses_fixed_value").textContent =
     // document.querySelector("#est_annual_expenses_variable_value").textContent =
     // document.querySelector("#est_total_annual_expenses_value").textContent =
 }
 
-function main(){
+function main() {
     // Gets the json file and converts it to an array which is used as an argument in the add_dict_elements function
     fetch("./data/data_sheet_variables.json")
     .then(response => {

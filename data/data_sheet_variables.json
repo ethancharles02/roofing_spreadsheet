@@ -8,8 +8,7 @@
                     "rent": {
                         "display_name": "Rent",
                         "default_fixed_value": true,
-                        "user_interaction": "input",
-                        "default_value": 100
+                        "user_interaction": "input"
                     },
                     "insurance": {
                         "display_name": "Business Insurance",
