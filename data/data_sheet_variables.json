@@ -8,7 +8,8 @@
                     "rent": {
                         "display_name": "Rent",
                         "default_fixed_value": true,
-                        "user_interaction": "input"
+                        "user_interaction": "input",
+                        "format": "curr"
                     },
                     "insurance": {
                         "display_name": "Business Insurance",

@@ -1,8 +1,6 @@
 // Add default values to json (if Shawn wants that)
 // Implement default values for new inputs
 
-// Add formatting for accounting values (place an additional div for input box and a new label that has a dollar sign)
-// Specify formatting in json (display_format?) Currencies, Ints, and Percentages
 // Move the creation of the h2 element (section name) to only happen if there is a display name (same for others?)
 // Check for display name, if not there, use the variable name for display
 // Separate add_dict_elements into smaller functions
@@ -13,37 +11,6 @@
 // Fica, futa, suta, gen liability, workers comp into output values instead of input
 // Rename total burden to tax burden
 // Materials should default to zero, qty, name, and cost should all still be inputs
-
-// func for getting information from a key inside a nested object
-// function getObject(theObject) {
-//     var result = null;
-//     if(theObject instanceof Array) {
-//         for(var i = 0; i < theObject.length; i++) {
-//             result = getObject(theObject[i]);
-//             if (result) {
-//                 break;
-//             }   
-//         }
-//     }
-//     else
-//     {
-//         for(var prop in theObject) {
-//             console.log(prop + ': ' + theObject[prop]);
-//             if(prop == 'id') {
-//                 if(theObject[prop] == 1) {
-//                     return theObject;
-//                 }
-//             }
-//             if(theObject[prop] instanceof Object || theObject[prop] instanceof Array) {
-//                 result = getObject(theObject[prop]);
-//                 if (result) {
-//                     break;
-//                 }
-//             } 
-//         }
-//     }
-//     return result;
-// }
 
 var data_sheet_values = {}
 var section_values = {}
@@ -198,20 +165,26 @@ function add_dict_elements(selector, dict, value_dict) {
     for (const section in dict) {
         section_values[section] = {}
 
-        // Creates a new element for the section name (ex. Monthly Overhead)
-        let section_header = document.createElement("h2")
-        // Updates the text content to include the display version of that item
-        section_header.textContent = dict[section]["display_name"]
-        // Adds the element to the selector element
-        document.querySelector(selector).appendChild(section_header)
-
         // Runs through each of the section values (ex. display_name, inputs, outputs)
         for (const section_value in dict[section]) {
-            section_values[section][section_value] = []
+            if (section_value != "display_name") {
+                section_values[section][section_value] = []
+            }
 
-            let section_value_header = document.createElement("h3")
-            section_value_header.textContent = dict[section][section_value]["display_name"]
-            document.querySelector(selector).appendChild(section_value_header)
+            if (section_value == "display_name") {
+                // Creates a new element for the section name (ex. Monthly Overhead)
+                let section_header = document.createElement("h2")
+                // Updates the text content to include the display version of that item
+                section_header.textContent = dict[section]["display_name"]
+                // Adds the element to the selector element
+                document.querySelector(selector).appendChild(section_header)
+            }
+
+            else if ("display_name" in dict[section][section_value]) {
+                let section_value_header = document.createElement("h3")
+                section_value_header.textContent = dict[section][section_value]["display_name"]
+                document.querySelector(selector).appendChild(section_value_header)
+            }
 
             let section_value_article = document.createElement("article")
             let article_id = section + "_" + section_value
