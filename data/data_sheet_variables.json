@@ -4,6 +4,7 @@
             "display_name": "Monthly Overhead",
             "inputs": {
                 "display_name": "Inputs",
+                "allow_additional_input_values": true,
                 "display_values": {
                     "rent": {
                         "display_name": "Rent",

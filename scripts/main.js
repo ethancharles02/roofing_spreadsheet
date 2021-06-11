@@ -3,7 +3,11 @@
 
 // Separate add_dict_elements into smaller functions
 // Allow for additional items to be added onto the monthly overhead and materials (this may involve removing the misc values)
+//      Add json option for allow_additional_input_values
+//      Add elements to value lists once they get created so that numbers can be added up
+//      Add formatting to the input box
 // Allow current display values in monthly overhead and materials to be changed
+//      Add json option that specifies whether a label can be edited or not (also add one for an entire section of display_values)
 // Change total roofing days to also allow for a total to be set (hiding the monthly values if the total is set)
 // Fica, futa, suta, gen liability, workers comp into output values instead of input
 // Materials should default to zero, qty, name, and cost should all still be inputs
@@ -11,6 +15,7 @@
 var data_sheet_values = {}
 var section_values = {}
 var data_sheet_variables_dict = {}
+var additional_inputs = []
 
 /**
  * Adds a query to an input text box that will run the given function
@@ -150,6 +155,37 @@ function create_currency_label() {
     return label
 }
 
+// function add_new_input_element(selector) {
+//     document.querySelector("#" + selector).appendChild(create_input(additional_input_buttons.length))
+// }
+
+function add_input_div_from_button(selector) {
+    let div = document.createElement("div")
+
+    let newid = "new_input_" + additional_inputs.length
+
+    let label = document.createElement("label")
+    label.for = newid
+    label.textContent = "test"
+    div.appendChild(label)
+
+    let input = create_input(newid)
+    div.appendChild(input)
+
+    additional_inputs.push(newid)
+
+    document.querySelector("#" + selector).appendChild(div)
+}
+
+function add_new_elements_from_input_button(event) {
+    let selector = event.path[1].id
+    add_input_div_from_button(selector)
+
+    let button = document.querySelector("#" + event.path[0].id)
+
+    button.parentNode.appendChild(button)
+}
+
 /**
  * Adds new elements to a given element based on the data_sheet_variables formatting through json
  * @param {string} selector The id of the element you want to add the new elements on top of
@@ -181,107 +217,128 @@ function add_dict_elements(selector, dict, value_dict) {
                 section_value_header.textContent = dict[section][section_value]["display_name"]
                 document.querySelector(selector).appendChild(section_value_header)
             }
+            
+            let allow_additional_input_values = false
+            if (typeof dict[section][section_value] == "object"){
+                if ("allow_additional_input_values" in dict[section][section_value]) {
+                    if (dict[section][section_value]["allow_additional_input_values"]) {
+                        allow_additional_input_values = true
+                    }
+                }
+            }
+            
+            if (section_value != "display_name") {
+                let section_value_article = document.createElement("article")
+                let article_id = section + "_" + section_value
+                section_value_article.id = article_id
+                document.querySelector(selector).appendChild(section_value_article)
+            
+                for (const key in dict[section][section_value]["display_values"]) {
+                    section_values[section][section_value].push(key)
 
-            let section_value_article = document.createElement("article")
-            let article_id = section + "_" + section_value
-            section_value_article.id = article_id
-            document.querySelector(selector).appendChild(section_value_article)
+                    let div = document.createElement("div")
 
-            for (const key in dict[section][section_value]["display_values"]) {
-                section_values[section][section_value].push(key)
+                    let label = document.createElement("label")
+                    label.for = key
+                    label.textContent = dict[section][section_value]["display_values"][key]["display_name"]
+                    div.appendChild(label)
+                    
+                    if (dict[section][section_value]["display_values"][key]["user_interaction"] == "input") {
+                        if ("default_value" in dict[section][section_value]["display_values"][key]){
+                            value_dict[key] = dict[section][section_value]["display_values"][key]["default_value"]
+                        }
 
-                let div = document.createElement("div")
+                        else {
+                            value_dict[key] = 0
+                        }
+                        
+                        if ("format" in dict[section][section_value]["display_values"][key]) {
+                            let input
+                            let curr_label
+                            switch (dict[section][section_value]["display_values"][key]["format"]) {
+                                case "curr":
+                                    input = create_input(key, key, "text", value_dict[key], "float")
+                                    curr_label = create_currency_label()
+                                    div.appendChild(curr_label)
+                                    div.appendChild(input)
+                                    break
 
-                let label = document.createElement("label")
-                label.for = key
-                label.textContent = dict[section][section_value]["display_values"][key]["display_name"] + ":"
-                div.appendChild(label)
-                
-                if (dict[section][section_value]["display_values"][key]["user_interaction"] == "input") {
-                    if ("default_value" in dict[section][section_value]["display_values"][key]){
-                        value_dict[key] = dict[section][section_value]["display_values"][key]["default_value"]
+                                case "int":
+                                    input = create_input(key, key, "text", value_dict[key], "int")
+                                    div.appendChild(input)
+                                    break
+
+                                case "perc":
+                                    input = create_input(key, key, "text", value_dict[key], "perc")
+                                    div.appendChild(input)
+                                    break
+
+                                default:
+                                    input = create_input(key, key, "text", value_dict[key], "float")
+                                    curr_label = create_currency_label()
+                                    div.appendChild(curr_label)
+                                    div.appendChild(input)
+                            }
+                        }
+                        else {
+                            let input = create_input(key, key, "text", value_dict[key], "float")
+                            let curr_label = create_currency_label()
+                            div.appendChild(curr_label)
+                            div.appendChild(input)
+                        }
+                        
+                        if ("show_fixed_box" in dict[section][section_value]["display_values"][key]) {
+                            if (dict[section][section_value]["display_values"][key]["show_fixed_box"]) {
+                                let fixed_label = document.createElement("label")
+                                fixed_label.for = key + "_fixed"
+                                fixed_label.textContent = "Fixed:"
+
+                                let fixed_input = document.createElement("input")
+                                fixed_input.type = "checkbox"
+                                fixed_input.checked = dict[section][section_value]["display_values"][key]["default_fixed_value"]
+                                fixed_input.id = key + "_fixed"
+                                fixed_input.name = key
+
+                                div.appendChild(fixed_label)
+                                div.appendChild(fixed_input)
+                            }
+                        }
+
+                        document.querySelector("#" + article_id).appendChild(div)
+
+                        // text input queries
+                        add_query_on_input(key, "blur", set_event_target_currency)
+                        add_query_on_input(key, "blur", update_outputs, dict)
+                        add_query_on_input(key, "input", restrict_input)
+                        add_query_on_input(key, "focus", focus_input)
+
+                        if ("default_fixed_value" in dict[section][section_value]["display_values"][key]) {
+                            add_query_on_change(key + "_fixed", update_outputs, dict)
+                        }
+                    }
+
+                    else if (dict[section][section_value]["display_values"][key]["user_interaction"] == "output") {
+                        output_label = document.createElement("label")
+                        output_label.id = key + "_value"
+
+                        div.appendChild(output_label)
+                        document.querySelector("#" + article_id).appendChild(div)
                     }
 
                     else {
-                        value_dict[key] = 0
-                    }
-                    
-                    if ("format" in dict[section][section_value]["display_values"][key]) {
-                        let input
-                        let curr_label
-                        switch (dict[section][section_value]["display_values"][key]["format"]) {
-                            case "curr":
-                                input = create_input(key, key, "text", value_dict[key], "float")
-                                curr_label = create_currency_label()
-                                div.appendChild(curr_label)
-                                div.appendChild(input)
-                                break
-
-                            case "int":
-                                input = create_input(key, key, "text", value_dict[key], "int")
-                                div.appendChild(input)
-                                break
-
-                            case "perc":
-                                input = create_input(key, key, "text", value_dict[key], "perc")
-                                div.appendChild(input)
-                                break
-
-                            default:
-                                input = create_input(key, key, "text", value_dict[key], "float")
-                                curr_label = create_currency_label()
-                                div.appendChild(curr_label)
-                                div.appendChild(input)
-                        }
-                    }
-                    else {
-                        let input = create_input(key, key, "text", value_dict[key], "float")
-                        let curr_label = create_currency_label()
-                        div.appendChild(curr_label)
-                        div.appendChild(input)
-                    }
-                    
-                    if ("show_fixed_box" in dict[section][section_value]["display_values"][key]) {
-                        if (dict[section][section_value]["display_values"][key]["show_fixed_box"]) {
-                            let fixed_label = document.createElement("label")
-                            fixed_label.for = key + "_fixed"
-                            fixed_label.textContent = "Fixed:"
-
-                            let fixed_input = document.createElement("input")
-                            fixed_input.type = "checkbox"
-                            fixed_input.checked = dict[section][section_value]["display_values"][key]["default_fixed_value"]
-                            fixed_input.id = key + "_fixed"
-                            fixed_input.name = key
-
-                            div.appendChild(fixed_label)
-                            div.appendChild(fixed_input)
-                        }
-                    }
-
-                    document.querySelector("#" + article_id).appendChild(div)
-
-                    // text input queries
-                    add_query_on_input(key, "blur", set_event_target_currency)
-                    add_query_on_input(key, "blur", update_outputs, dict)
-                    add_query_on_input(key, "input", restrict_input)
-                    add_query_on_input(key, "focus", focus_input)
-
-                    if ("default_fixed_value" in dict[section][section_value]["display_values"][key]) {
-                        add_query_on_change(key + "_fixed", update_outputs, dict)
+                        document.querySelector("#" + article_id).appendChild(div)
                     }
                 }
+            }
+            if (allow_additional_input_values) {
+                let button = document.createElement("button")
+                button.type = "button"
+                button.textContent = "New Input"
+                button.id = section + "_" + section_value + "_button"
+                button.style.width = "100px"
+                button.onclick = add_new_elements_from_input_button
 
-                else if (dict[section][section_value]["display_values"][key]["user_interaction"] == "output") {
-                    output_label = document.createElement("label")
-                    output_label.id = key + "_value"
-
-                    div.appendChild(output_label)
-                    document.querySelector("#" + article_id).appendChild(div)
-                }
-
-                else {
-                    document.querySelector("#" + article_id).appendChild(div)
-                }
+                document.querySelector("#" + section + "_" + section_value).appendChild(button)
             }
         }
     }
@@ -312,8 +369,8 @@ function update_monthly_overhead_outputs() {
         }
     }
 
-    document.querySelector("#est_monthly_expenses_fixed_value").textContent = format_value(monthly_overhead_fixed_sum)
-    document.querySelector("#est_monthly_expenses_variable_value").textContent = format_value(monthly_overhead_variable_sum)
+    document.querySelector("#est_monthly_expenses_fixed_value").textContent = format_value(monthly_overhead_fixed_sum, "curr")
+    document.querySelector("#est_monthly_expenses_variable_value").textContent = format_value(monthly_overhead_variable_sum, "curr")
     // document.querySelector("#est_annual_expenses_fixed_value").textContent =
     // document.querySelector("#est_annual_expenses_variable_value").textContent =
     // document.querySelector("#est_total_annual_expenses_value").textContent =
