@@ -1,11 +1,25 @@
-// Add default values to json (if Shawn wants that)
-// Implement default values for new inputs
+// Removed Misc Json Code
+// "misc1": {
+//     "display_name": "Misc",
+//     "show_fixed_box": true,
+//     "default_fixed_value": false,
+//     "user_interaction": "input"
+// },
+// "misc2": {
+//     "display_name": "Misc",
+//     "show_fixed_box": true,
+//     "default_fixed_value": false,
+//     "user_interaction": "input"
+// },
+// "misc3": {
+//     "display_name": "Misc",
+//     "show_fixed_box": true,
+//     "default_fixed_value": false,
+//     "user_interaction": "input"
+// }
 
 // Separate add_dict_elements into smaller functions
-// Allow for additional items to be added onto the monthly overhead and materials (this may involve removing the misc values)
-//      Add json option for allow_additional_input_values
-//      Add elements to value lists once they get created so that numbers can be added up
-//      Add formatting to the input box
+// Add formatting to the new input box
 // Allow current display values in monthly overhead and materials to be changed
 //      Add json option that specifies whether a label can be edited or not (also add one for an entire section of display_values)
 // Change total roofing days to also allow for a total to be set (hiding the monthly values if the total is set)
@@ -120,6 +134,9 @@ function focus_input(event) {
     let target_id = event.target.id
 
     // Updates the value to be the input version of the value
+    if (typeof(data_sheet_values[target_id]) == "undefined") {
+        data_sheet_values[target_id] = 0
+    }
     event.target.value = data_sheet_values[target_id]
     // Selects the whole of the input for easier editing
     event.target.select()
@@ -139,7 +156,7 @@ function create_input(id, name=id, type="text", value=0, format="float") {
     input.id = id
     input.name = name
     input.value = format_value(value, format)
-    
+
     return input
 }
 
@@ -155,10 +172,10 @@ function create_currency_label() {
     return label
 }
 
-// function add_new_input_element(selector) {
-//     document.querySelector("#" + selector).appendChild(create_input(additional_input_buttons.length))
-// }
-
+/**
+ * Adds a new input onto the end of a selector, moving the button to the end of that section
+ * @param {string} selector The selector to add the new input onto
+ */
 function add_input_div_from_button(selector) {
     let div = document.createElement("div")
 
@@ -166,17 +183,45 @@ function add_input_div_from_button(selector) {
 
     let label = document.createElement("label")
     label.for = newid
-    label.textContent = "test"
+    label.textContent = "Misc"
     div.appendChild(label)
+
+    let curr_label = create_currency_label()
+    div.appendChild(curr_label)
 
     let input = create_input(newid)
     div.appendChild(input)
 
     additional_inputs.push(newid)
+    data_sheet_values[newid] = 0
+
+    section_id = selector.substring(0, selector.lastIndexOf("_"))
+    subsection_id = selector.substring(selector.lastIndexOf("_") + 1)
+
+    section_values[section_id][subsection_id].push(newid)
+    data_sheet_variables_dict[section_id][subsection_id]["display_values"][newid] = {
+        "display_name": "",
+        "show_fixed_box": true,
+        "default_fixed_value": false,
+        "user_interaction": "input"
+    }
+
+    add_fixed_box(newid, div, section_id, subsection_id, "Fixed:")
 
     document.querySelector("#" + selector).appendChild(div)
+
+    add_query_on_input(newid, "blur", set_event_target_currency)
+    add_query_on_input(newid, "blur", update_outputs, data_sheet_variables_dict)
+    add_query_on_input(newid, "input", restrict_input)
+    add_query_on_input(newid, "focus", focus_input)
+    add_query_on_change(newid + "_fixed", update_outputs, data_sheet_variables_dict)
 }
 
+/**
+ * Adds the new elements onto the element id one step up from where the button is
+ * This is used with the New Input Button
+ * @param {object} event 
+ */
 function add_new_elements_from_input_button(event) {
     let selector = event.path[1].id
     add_input_div_from_button(selector)
@@ -185,6 +230,30 @@ function add_new_elements_from_input_button(event) {
 
     button.parentNode.appendChild(button)
 }
+
+/**
+ * 
+ * @param {string} orig_id The original id for the input
+ * @param {Element} div The div element to add onto
+ * @param {string} section The corresponding section value (ie. monthly_overhead)
+ * @param {string} section_value The corresponding subsection value for the section (ie. inputs)
+ * @param {string} text The text to be added next to the fixed box
+ */
+function add_fixed_box(orig_id, div, section, section_value, text="Fixed:") {
+    let fixed_label = document.createElement("label")
+    fixed_label.for = orig_id + "_fixed"
+    fixed_label.textContent = text
+
+    let fixed_input = document.createElement("input")
+    fixed_input.type = "checkbox"
+    fixed_input.checked = data_sheet_variables_dict[section][section_value]["display_values"][orig_id]["default_fixed_value"]
+    fixed_input.id = orig_id + "_fixed"
+    fixed_input.name = orig_id
+
+    div.appendChild(fixed_label)
+    div.appendChild(fixed_input)
+}
+
 
 /**
  * Adds new elements to a given element based on the data_sheet_variables formatting through json
@@ -289,18 +358,7 @@ function add_dict_elements(selector, dict, value_dict) {
                         
                         if ("show_fixed_box" in dict[section][section_value]["display_values"][key]) {
                             if (dict[section][section_value]["display_values"][key]["show_fixed_box"]) {
-                                let fixed_label = document.createElement("label")
-                                fixed_label.for = key + "_fixed"
-                                fixed_label.textContent = "Fixed:"
-
-                                let fixed_input = document.createElement("input")
-                                fixed_input.type = "checkbox"
-                                fixed_input.checked = dict[section][section_value]["display_values"][key]["default_fixed_value"]
-                                fixed_input.id = key + "_fixed"
-                                fixed_input.name = key
-
-                                div.appendChild(fixed_label)
-                                div.appendChild(fixed_input)
+                                add_fixed_box(key, div, section, section_value, "Fixed:")
                             }
                         }
 
@@ -351,6 +409,7 @@ function update_outputs() {
 function update_monthly_overhead_outputs() {
     let monthly_overhead_fixed_sum = 0
     let monthly_overhead_variable_sum = 0
+
     for (key of section_values["monthly_overhead"]["inputs"]) {
         fixed_input = document.querySelector("#" + key + "_fixed")
         if (fixed_input) {

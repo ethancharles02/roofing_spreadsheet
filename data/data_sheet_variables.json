@@ -83,24 +83,6 @@
                         "show_fixed_box": true,
                         "default_fixed_value": true,
                         "user_interaction": "input"
-                    },
-                    "misc1": {
-                        "display_name": "Misc",
-                        "show_fixed_box": true,
-                        "default_fixed_value": false,
-                        "user_interaction": "input"
-                    },
-                    "misc2": {
-                        "display_name": "Misc",
-                        "show_fixed_box": true,
-                        "default_fixed_value": false,
-                        "user_interaction": "input"
-                    },
-                    "misc3": {
-                        "display_name": "Misc",
-                        "show_fixed_box": true,
-                        "default_fixed_value": false,
-                        "user_interaction": "input"
                     }
                 }
             },
