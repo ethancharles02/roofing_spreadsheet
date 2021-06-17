@@ -5,6 +5,7 @@
             "inputs": {
                 "display_name": "Inputs",
                 "allow_additional_input_values": true,
+                "allow_label_editing": true,
                 "display_values": {
                     "rent": {
                         "display_name": "Rent",

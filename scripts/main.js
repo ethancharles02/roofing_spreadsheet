@@ -1,35 +1,53 @@
-// Removed Misc Json Code
-// "misc1": {
-//     "display_name": "Misc",
-//     "show_fixed_box": true,
-//     "default_fixed_value": false,
-//     "user_interaction": "input"
-// },
-// "misc2": {
-//     "display_name": "Misc",
-//     "show_fixed_box": true,
-//     "default_fixed_value": false,
-//     "user_interaction": "input"
-// },
-// "misc3": {
-//     "display_name": "Misc",
-//     "show_fixed_box": true,
-//     "default_fixed_value": false,
-//     "user_interaction": "input"
-// }
+// To-Do:
+// Add removal button for individual inputs
 
-// Separate add_dict_elements into smaller functions
-// Add formatting to the new input box
-// Allow current display values in monthly overhead and materials to be changed
-//      Add json option that specifies whether a label can be edited or not (also add one for an entire section of display_values)
+// Update data sheet variable dict values when new values get inserted as well as the default fixed value
+// Add reset button for all variables (and individual sections)
+
 // Change total roofing days to also allow for a total to be set (hiding the monthly values if the total is set)
 // Fica, futa, suta, gen liability, workers comp into output values instead of input
 // Materials should default to zero, qty, name, and cost should all still be inputs
+// Separate add_dict_elements into smaller functions
 
 var data_sheet_values = {}
 var section_values = {}
+var data_sheet_variables_dict_original = {}
 var data_sheet_variables_dict = {}
 var additional_inputs = []
+
+// function from Farkhat Mikhalko https://stackoverflow.com/questions/25403781/how-to-get-the-path-from-javascript-object-from-key-and-value
+// Edited for my needs
+// /**
+//  * 
+//  * @param {object} c 
+//  * @param {string} name 
+//  * @param {int} v 
+//  * @param {string} currentPath 
+//  * @param {string} t 
+//  * @returns Returns the path for the name in c
+//  */
+// function path(c, name, currentPath, t) {
+
+//     // console.log(typeof c)
+//     // console.log(c)
+
+//     for(const key in c) {
+//         // if (typeof c[key] == "array") {
+//         //     console.log(c[key])
+//         // }
+//         console.log(key)
+//         // console.log(c[key])
+//         if(c[key] == name) {
+//             t = currentPath
+//         }
+//         if(typeof c[key] == "object") {
+//             return path(c[key], name, currentPath + "." + key)
+//         }
+//     }
+    
+
+//     return t + "." + name
+// }
 
 /**
  * Adds a query to an input text box that will run the given function
@@ -98,6 +116,59 @@ function set_event_target_currency(event) {
 }
 
 /**
+ * Used with the blur event to hide the input that was clicked while updating the label and showing it
+ * @param {object} event The event given from jQuery
+ */
+function hide_label_input(event) {
+    let input_id = event.target.id
+    let label_id = get_source_id(event.target.id)
+    
+    document.querySelector("#" + input_id).style.display = "none"
+    
+    let new_value = document.querySelector("#" + input_id).value
+
+    let section_id = get_source_id(event.originalEvent.path[2].id)
+    let subsection_id = get_original_id(event.originalEvent.path[2].id)
+    data_sheet_variables_dict[section_id][subsection_id]["display_values"][get_source_id(label_id)]["display_name"] = new_value
+
+    document.querySelector("#" + label_id).textContent = new_value
+    document.querySelector("#" + label_id).style.display = "inline"
+}
+
+/**
+ * Used with the click event to hide the label then show the input box while selecting it
+ * @param {object} event The event given from jQuery
+ */
+function edit_label(event) {
+    document.querySelector("#" + event.target.id).style.display = "none"
+
+    let input_id = event.target.id + "_input"
+    document.querySelector("#" + input_id).style.display = "inline"
+    document.querySelector("#" + input_id).select()
+}
+
+/**
+ * Makes a label editable by replacing it with an input once it is clicked
+ * @param {string} label_id The id for the label that you want to make editable
+ * @param {Element} parent_container The parent container that the label resides in
+ */
+function set_label_editable(label_id, parent_container) {
+
+    let input_id = label_id + "_input"
+
+    let label_input = create_input(input_id, input_id, "text", "", false)
+
+    label_input.style.display = "none"
+    // label_input.setAttribute("text-align", "left")
+    label_input.value = document.querySelector("#" + label_id).textContent
+
+    parent_container.insertBefore(label_input, document.querySelector("#" + label_id).nextSibling)
+
+    add_query_on_input(label_id, "click", edit_label)
+    add_query_on_input(input_id, "blur", hide_label_input)
+}
+
+/**
  * Restricts the input of the target object based on if it is a valid number, if it isn't, it sets the value to the corresponding id value in the data_sheet_values object
  * @param {object} event The event given from jQuery that can be used to find information on the element
  */
@@ -148,14 +219,21 @@ function focus_input(event) {
  * @param {string} [name=id] The name that will be used for the input name, defaults to the id
  * @param {string} [type="text"] Type specifies what the input box's type will be. Defaults to "text"
  * @param {(string|float)} [value=0] Value decides what the default value for the input will be set to. Defaults to 0
- * @param {string} [format="float"] Format is the format that will be used with the format_value formula. Defaults to "curr"
- */
-function create_input(id, name=id, type="text", value=0, format="float") {
+ * @param {boolean} [format=true] Format decides whether to format the value or not
+ * @param {string} [format_type="float"] Format_type is the format that will be used with the format_value formula. Defaults to "curr" 
+*/
+function create_input(id, name=id, type="text", value=0, format=true, format_type="float") {
     let input = document.createElement("input")
     input.type = type
     input.id = id
     input.name = name
-    input.value = format_value(value, format)
+
+    if (format) {
+        input.value = format_value(value, format_type)
+    }
+    else {
+        input.value = value
+    }
 
     return input
 }
@@ -173,16 +251,51 @@ function create_currency_label() {
 }
 
 /**
+ * 
+ * @param {string} id The id to be used for finding the source id
+ * @returns Returns a string for the id one level down from the given one (ie. source_id => source)
+ */
+function get_source_id(id, iterations=1) {
+    let new_id = id
+
+    for (let i = 0; i < iterations; i++) {
+        new_id = new_id.substring(0, new_id.lastIndexOf("_"))
+    }
+
+    return new_id
+}
+
+function get_original_id(id) {
+    return id.substring(id.lastIndexOf("_") + 1)
+}
+
+/**
  * Adds a new input onto the end of a selector, moving the button to the end of that section
  * @param {string} selector The selector to add the new input onto
  */
 function add_input_div_from_button(selector) {
+
+    section_id = get_source_id(selector)
+    subsection_id = get_original_id(selector)
+
+    let allow_label_editing = false
+    if ("allow_label_editing" in data_sheet_variables_dict[section_id][subsection_id]) {
+        if (data_sheet_variables_dict[section_id][subsection_id]["allow_label_editing"]) {
+            allow_label_editing = true
+        }
+    }
+
     let div = document.createElement("div")
 
     let newid = "new_input_" + additional_inputs.length
 
     let label = document.createElement("label")
     label.for = newid
+
+    if (allow_label_editing) {
+        label.id = newid + "_label"
+    }
+
     label.textContent = "Misc"
     div.appendChild(label)
 
@@ -194,9 +307,6 @@ function add_input_div_from_button(selector) {
 
     additional_inputs.push(newid)
     data_sheet_values[newid] = 0
-
-    section_id = selector.substring(0, selector.lastIndexOf("_"))
-    subsection_id = selector.substring(selector.lastIndexOf("_") + 1)
 
     section_values[section_id][subsection_id].push(newid)
     data_sheet_variables_dict[section_id][subsection_id]["display_values"][newid] = {
@@ -215,6 +325,10 @@ function add_input_div_from_button(selector) {
     add_query_on_input(newid, "input", restrict_input)
     add_query_on_input(newid, "focus", focus_input)
     add_query_on_change(newid + "_fixed", update_outputs, data_sheet_variables_dict)
+
+    if (allow_label_editing) {
+        set_label_editable(newid + "_label", div)
+    }
 }
 
 /**
@@ -268,9 +382,6 @@ function add_dict_elements(selector, dict, value_dict) {
 
         // Runs through each of the section values (ex. display_name, inputs, outputs)
         for (const section_value in dict[section]) {
-            if (section_value != "display_name") {
-                section_values[section][section_value] = []
-            }
 
             if (section_value == "display_name") {
                 // Creates a new element for the section name (ex. Monthly Overhead)
@@ -297,21 +408,43 @@ function add_dict_elements(selector, dict, value_dict) {
             }
             
             if (section_value != "display_name") {
+
+                let allow_label_editing = false
+
+                if ("allow_label_editing" in dict[section][section_value]) {
+                    if (dict[section][section_value]["allow_label_editing"]) {
+                        allow_label_editing = true
+                    }
+                }
+
+                section_values[section][section_value] = []
+
                 let section_value_article = document.createElement("article")
                 let article_id = section + "_" + section_value
                 section_value_article.id = article_id
                 document.querySelector(selector).appendChild(section_value_article)
             
                 for (const key in dict[section][section_value]["display_values"]) {
+
+                    let allow_label_editing_temp = false
+                    if ("allow_label_editing" in dict[section][section_value]["display_values"][key]) {
+                        allow_label_editing_temp = true
+                    }
+
                     section_values[section][section_value].push(key)
 
                     let div = document.createElement("div")
 
                     let label = document.createElement("label")
+
+                    if (allow_label_editing || allow_label_editing_temp) {
+                        label.id = key + "_label"
+                    }
+
                     label.for = key
                     label.textContent = dict[section][section_value]["display_values"][key]["display_name"]
                     div.appendChild(label)
-                    
+
                     if (dict[section][section_value]["display_values"][key]["user_interaction"] == "input") {
                         if ("default_value" in dict[section][section_value]["display_values"][key]){
                             value_dict[key] = dict[section][section_value]["display_values"][key]["default_value"]
@@ -326,31 +459,31 @@ function add_dict_elements(selector, dict, value_dict) {
                             let curr_label
                             switch (dict[section][section_value]["display_values"][key]["format"]) {
                                 case "curr":
-                                    input = create_input(key, key, "text", value_dict[key], "float")
+                                    input = create_input(key, key, "text", value_dict[key], true, "float")
                                     curr_label = create_currency_label()
                                     div.appendChild(curr_label)
                                     div.appendChild(input)
                                     break
 
                                 case "int":
-                                    input = create_input(key, key, "text", value_dict[key], "int")
+                                    input = create_input(key, key, "text", value_dict[key], true, "int")
                                     div.appendChild(input)
                                     break
 
                                 case "perc":
-                                    input = create_input(key, key, "text", value_dict[key], "perc")
+                                    input = create_input(key, key, "text", value_dict[key], true, "perc")
                                     div.appendChild(input)
                                     break
 
                                 default:
-                                    input = create_input(key, key, "text", value_dict[key], "float")
+                                    input = create_input(key, key, "text", value_dict[key], true, "float")
                                     curr_label = create_currency_label()
                                     div.appendChild(curr_label)
                                     div.appendChild(input)
                             }
                         }
                         else {
-                            let input = create_input(key, key, "text", value_dict[key], "float")
+                            let input = create_input(key, key, "text", value_dict[key], true, "float")
                             let curr_label = create_currency_label()
                             div.appendChild(curr_label)
                             div.appendChild(input)
@@ -372,6 +505,10 @@ function add_dict_elements(selector, dict, value_dict) {
 
                         if ("default_fixed_value" in dict[section][section_value]["display_values"][key]) {
                             add_query_on_change(key + "_fixed", update_outputs, dict)
+                        }
+
+                        if (allow_label_editing || allow_label_editing_temp) {
+                            set_label_editable(key + "_label", div)
                         }
                     }
 
@@ -442,7 +579,8 @@ function main() {
         return response.json()
     })
     .then(data => {
-        data_sheet_variables_dict = data[0]
+        data_sheet_variables_dict_original = data[0]
+        data_sheet_variables_dict = JSON.parse(JSON.stringify(data[0]))
         add_dict_elements("#data_sheet_variables", data_sheet_variables_dict, data_sheet_values)
         update_outputs()
     })
