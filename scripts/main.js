@@ -1,6 +1,5 @@
 // To-Do:
-// Add removal button for individual inputs
-
+// Move changes to the data_sheet_values over to the function update_data_sheet_value. This should allow you to also update the default value in data_sheet_variables_dict
 // Update data sheet variable dict values when new values get inserted as well as the default fixed value
 // Add reset button for all variables (and individual sections)
 
@@ -8,12 +7,14 @@
 // Fica, futa, suta, gen liability, workers comp into output values instead of input
 // Materials should default to zero, qty, name, and cost should all still be inputs
 // Separate add_dict_elements into smaller functions
+// Move removal button to a harder to click place or make a confirmation message
 
 var data_sheet_values = {}
 var section_values = {}
 var data_sheet_variables_dict_original = {}
 var data_sheet_variables_dict = {}
 var additional_inputs = []
+var num_additional_inputs = 0
 
 // function from Farkhat Mikhalko https://stackoverflow.com/questions/25403781/how-to-get-the-path-from-javascript-object-from-key-and-value
 // Edited for my needs
@@ -168,6 +169,10 @@ function set_label_editable(label_id, parent_container) {
     add_query_on_input(input_id, "blur", hide_label_input)
 }
 
+function update_data_sheet_value() {
+
+}
+
 /**
  * Restricts the input of the target object based on if it is a valid number, if it isn't, it sets the value to the corresponding id value in the data_sheet_values object
  * @param {object} event The event given from jQuery that can be used to find information on the element
@@ -265,6 +270,11 @@ function get_source_id(id, iterations=1) {
     return new_id
 }
 
+/**
+ * 
+ * @param {string} id 
+ * @returns Returns the last part of an id, ie. "test_string" would return "string"
+ */
 function get_original_id(id) {
     return id.substring(id.lastIndexOf("_") + 1)
 }
@@ -285,9 +295,26 @@ function add_input_div_from_button(selector) {
         }
     }
 
+    let allow_removal = false
+
+    if ("allow_removal" in data_sheet_variables_dict[section_id][subsection_id]) {
+        allow_removal = data_sheet_variables_dict[section_id][subsection_id]["allow_removal"]
+        if (typeof(allow_removal) != "boolean") {
+            if (allow_label_editing) {
+                allow_removal = true
+            }
+            else {
+                allow_removal = false
+            }
+        }
+    }
+    else if (allow_label_editing) {
+        allow_removal = true
+    }
+
     let div = document.createElement("div")
 
-    let newid = "new_input_" + additional_inputs.length
+    let newid = "new_input_" + num_additional_inputs
 
     let label = document.createElement("label")
     label.for = newid
@@ -306,11 +333,12 @@ function add_input_div_from_button(selector) {
     div.appendChild(input)
 
     additional_inputs.push(newid)
+    num_additional_inputs += 1
     data_sheet_values[newid] = 0
 
     section_values[section_id][subsection_id].push(newid)
     data_sheet_variables_dict[section_id][subsection_id]["display_values"][newid] = {
-        "display_name": "",
+        "display_name": "Misc",
         "show_fixed_box": true,
         "default_fixed_value": false,
         "user_interaction": "input"
@@ -318,13 +346,18 @@ function add_input_div_from_button(selector) {
 
     add_fixed_box(newid, div, section_id, subsection_id, "Fixed:")
 
+    if (allow_removal) {
+        let button = create_removal_button(newid)
+        div.append(button)
+    }
+
     document.querySelector("#" + selector).appendChild(div)
 
     add_query_on_input(newid, "blur", set_event_target_currency)
     add_query_on_input(newid, "blur", update_outputs, data_sheet_variables_dict)
     add_query_on_input(newid, "input", restrict_input)
     add_query_on_input(newid, "focus", focus_input)
-    add_query_on_change(newid + "_fixed", update_outputs, data_sheet_variables_dict)
+    add_query_on_change(newid + "_fixed", fixed_box_change, data_sheet_variables_dict)
 
     if (allow_label_editing) {
         set_label_editable(newid + "_label", div)
@@ -368,6 +401,57 @@ function add_fixed_box(orig_id, div, section, section_value, text="Fixed:") {
     div.appendChild(fixed_input)
 }
 
+function fixed_box_change(event) {
+    // Gets id information
+    source_id = get_source_id(event.target.id)
+    section_id = get_source_id(event.originalEvent.path[2].id)
+    subsection_id = get_original_id(event.originalEvent.path[2].id)
+
+    data_sheet_variables_dict[section_id][subsection_id]["display_values"][source_id]["default_fixed_value"] = event.target.checked
+
+    update_outputs()
+}
+
+/**
+ * 
+ * @param {string} source_id id of the section, ie. rent
+ * @returns button element to remove the elements of the container that button is in
+ */
+function create_removal_button(source_id) {
+    let button = document.createElement("button")
+    button.type = "button"
+    button.textContent = "X"
+    button.id = source_id + "_removebutton"
+    button.style.width = "25px"
+    button.onclick = remove_elements
+
+    return button
+}
+
+/**
+ * Removes the elements in the given parent container in the event
+ * @param {object} event the jquery event
+ */
+function remove_elements(event) {
+    // Gets id information
+    source_id = get_source_id(event.target.id)
+    section_id = get_source_id(event.path[2].id)
+    subsection_id = get_original_id(event.path[2].id)
+
+    // Deletes the information from the corresponding global variables
+    delete data_sheet_values[source_id]
+    section_values[section_id][subsection_id].splice(section_values[section_id][subsection_id].indexOf(source_id), 1)
+    delete data_sheet_variables_dict[section_id][subsection_id]["display_values"][source_id]
+    if (additional_inputs.includes(source_id)) {
+        additional_inputs.splice(additional_inputs.indexOf(source_id), 1)
+    }
+
+    // Updates outputs
+    update_outputs()
+
+    // Removes the parent container (a div in this case)
+    event.target.parentNode.remove()
+}
 
 /**
  * Adds new elements to a given element based on the data_sheet_variables formatting through json
@@ -417,6 +501,23 @@ function add_dict_elements(selector, dict, value_dict) {
                     }
                 }
 
+                let allow_removal = false
+
+                if ("allow_removal" in dict[section][section_value]) {
+                    allow_removal = dict[section][section_value]["allow_removal"]
+                    if (typeof(allow_removal) != "boolean") {
+                        if (allow_label_editing) {
+                            allow_removal = true
+                        }
+                        else {
+                            allow_removal = false
+                        }
+                    }
+                }
+                else if (allow_label_editing) {
+                    allow_removal = true
+                }
+
                 section_values[section][section_value] = []
 
                 let section_value_article = document.createElement("article")
@@ -426,9 +527,20 @@ function add_dict_elements(selector, dict, value_dict) {
             
                 for (const key in dict[section][section_value]["display_values"]) {
 
-                    let allow_label_editing_temp = false
+                    let allow_label_editing_temp = allow_label_editing
                     if ("allow_label_editing" in dict[section][section_value]["display_values"][key]) {
-                        allow_label_editing_temp = true
+                        allow_label_editing_temp = dict[section][section_value]["display_values"][key]["allow_label_editing"]
+                        if (typeof(allow_label_editing_temp) != "boolean") {
+                            allow_label_editing_temp = allow_label_editing
+                        }
+                    }
+                    
+                    let allow_removal_temp = allow_removal
+                    if ("allow_removal" in dict[section][section_value]["display_values"][key]) {
+                        allow_removal_temp = dict[section][section_value]["display_values"][key]["allow_removal"]
+                        if (typeof(allow_removal_temp) != "boolean") {
+                            allow_removal_temp = allow_removal
+                        }
                     }
 
                     section_values[section][section_value].push(key)
@@ -437,7 +549,7 @@ function add_dict_elements(selector, dict, value_dict) {
 
                     let label = document.createElement("label")
 
-                    if (allow_label_editing || allow_label_editing_temp) {
+                    if (allow_label_editing_temp) {
                         label.id = key + "_label"
                     }
 
@@ -495,6 +607,11 @@ function add_dict_elements(selector, dict, value_dict) {
                             }
                         }
 
+                        if (allow_removal_temp) {
+                            let button = create_removal_button(key)
+                            div.append(button)
+                        }
+
                         document.querySelector("#" + article_id).appendChild(div)
 
                         // text input queries
@@ -504,10 +621,10 @@ function add_dict_elements(selector, dict, value_dict) {
                         add_query_on_input(key, "focus", focus_input)
 
                         if ("default_fixed_value" in dict[section][section_value]["display_values"][key]) {
-                            add_query_on_change(key + "_fixed", update_outputs, dict)
+                            add_query_on_change(key + "_fixed", fixed_box_change, dict)
                         }
 
-                        if (allow_label_editing || allow_label_editing_temp) {
+                        if (allow_label_editing_temp) {
                             set_label_editable(key + "_label", div)
                         }
                     }
