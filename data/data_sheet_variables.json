@@ -7,11 +7,13 @@
                 "allow_additional_input_values": true,
                 "allow_removal": true,
                 "allow_label_editing": true,
+                "allow_reset": true,
                 "display_values": {
                     "rent": {
                         "display_name": "Rent",
                         "default_fixed_value": true,
                         "user_interaction": "input",
+                        "default_value": 0,
                         "format": "curr"
                     },
                     "insurance": {

@@ -1,7 +1,6 @@
 // To-Do:
-// Move changes to the data_sheet_values over to the function update_data_sheet_value. This should allow you to also update the default value in data_sheet_variables_dict
-// Update data sheet variable dict values when new values get inserted as well as the default fixed value
 // Add reset button for all variables (and individual sections)
+// Fix Memory Leaks from reset buttons
 
 // Change total roofing days to also allow for a total to be set (hiding the monthly values if the total is set)
 // Fica, futa, suta, gen liability, workers comp into output values instead of input
@@ -9,46 +8,14 @@
 // Separate add_dict_elements into smaller functions
 // Move removal button to a harder to click place or make a confirmation message
 
+'use strict'
+
 var data_sheet_values = {}
 var section_values = {}
 var data_sheet_variables_dict_original = {}
 var data_sheet_variables_dict = {}
 var additional_inputs = []
 var num_additional_inputs = 0
-
-// function from Farkhat Mikhalko https://stackoverflow.com/questions/25403781/how-to-get-the-path-from-javascript-object-from-key-and-value
-// Edited for my needs
-// /**
-//  * 
-//  * @param {object} c 
-//  * @param {string} name 
-//  * @param {int} v 
-//  * @param {string} currentPath 
-//  * @param {string} t 
-//  * @returns Returns the path for the name in c
-//  */
-// function path(c, name, currentPath, t) {
-
-//     // console.log(typeof c)
-//     // console.log(c)
-
-//     for(const key in c) {
-//         // if (typeof c[key] == "array") {
-//         //     console.log(c[key])
-//         // }
-//         console.log(key)
-//         // console.log(c[key])
-//         if(c[key] == name) {
-//             t = currentPath
-//         }
-//         if(typeof c[key] == "object") {
-//             return path(c[key], name, currentPath + "." + key)
-//         }
-//     }
-    
-
-//     return t + "." + name
-// }
 
 /**
  * Adds a query to an input text box that will run the given function
@@ -169,8 +136,12 @@ function set_label_editable(label_id, parent_container) {
     add_query_on_input(input_id, "blur", hide_label_input)
 }
 
-function update_data_sheet_value() {
+function update_data_sheet_value(id, new_value, update_dict = true, section_id = "", subsection_id = "") {
+    data_sheet_values[id] = new_value
 
+    if (update_dict) {
+        data_sheet_variables_dict[section_id][subsection_id]["display_values"][id]["default_value"] = new_value
+    }
 }
 
 /**
@@ -180,6 +151,9 @@ function update_data_sheet_value() {
 function restrict_input(event) {
     let value = event.target.value
     let target_id = event.target.id
+
+    let section_id = get_source_id(event.originalEvent.path[2].id)
+    let subsection_id = get_original_id(event.originalEvent.path[2].id)
 
     // If the input isn't a number and isn't an empty string, it reverts it to the previous value
     if (!jQuery.isNumeric(value) && value != "") {
@@ -191,13 +165,16 @@ function restrict_input(event) {
     // If the value is an int, it is simply stored as is
     else {
         if (value.includes(".")) {
-            data_sheet_values[target_id] = parseFloat(value).toFixed(2)
+            update_data_sheet_value(target_id, parseFloat(value).toFixed(2), true, section_id, subsection_id)
+            // data_sheet_values[target_id] = parseFloat(value).toFixed(2)
         }
         else if(value == "") {
-            data_sheet_values[target_id] = value
+            update_data_sheet_value(target_id, 0, true, section_id, subsection_id)
+            // data_sheet_values[target_id] = value
         }
         else {
-            data_sheet_values[target_id] = parseFloat(value)
+            update_data_sheet_value(target_id, parseFloat(value), true, section_id, subsection_id)
+            // data_sheet_values[target_id] = parseFloat(value)
         }
     }
 }
@@ -211,7 +188,8 @@ function focus_input(event) {
 
     // Updates the value to be the input version of the value
     if (typeof(data_sheet_values[target_id]) == "undefined") {
-        data_sheet_values[target_id] = 0
+        update_data_sheet_value(target_id, 0, false)
+        // data_sheet_values[target_id] = 0
     }
     event.target.value = data_sheet_values[target_id]
     // Selects the whole of the input for easier editing
@@ -282,11 +260,12 @@ function get_original_id(id) {
 /**
  * Adds a new input onto the end of a selector, moving the button to the end of that section
  * @param {string} selector The selector to add the new input onto
+ * @param {string} button_id The button id so that the new input div can be inserted before the button
  */
-function add_input_div_from_button(selector) {
+function add_input_div_from_button(selector, button_id) {
 
-    section_id = get_source_id(selector)
-    subsection_id = get_original_id(selector)
+    let section_id = get_source_id(selector)
+    let subsection_id = get_original_id(selector)
 
     let allow_label_editing = false
     if ("allow_label_editing" in data_sheet_variables_dict[section_id][subsection_id]) {
@@ -334,7 +313,8 @@ function add_input_div_from_button(selector) {
 
     additional_inputs.push(newid)
     num_additional_inputs += 1
-    data_sheet_values[newid] = 0
+    update_data_sheet_value(newid, 0, false)
+    // data_sheet_values[newid] = 0
 
     section_values[section_id][subsection_id].push(newid)
     data_sheet_variables_dict[section_id][subsection_id]["display_values"][newid] = {
@@ -351,14 +331,14 @@ function add_input_div_from_button(selector) {
         div.append(button)
     }
 
-    document.querySelector("#" + selector).appendChild(div)
+    document.querySelector("#" + selector).insertBefore(div, document.querySelector("#" + button_id))
 
     add_query_on_input(newid, "blur", set_event_target_currency)
     add_query_on_input(newid, "blur", update_outputs, data_sheet_variables_dict)
     add_query_on_input(newid, "input", restrict_input)
     add_query_on_input(newid, "focus", focus_input)
     add_query_on_change(newid + "_fixed", fixed_box_change, data_sheet_variables_dict)
-
+    
     if (allow_label_editing) {
         set_label_editable(newid + "_label", div)
     }
@@ -371,11 +351,11 @@ function add_input_div_from_button(selector) {
  */
 function add_new_elements_from_input_button(event) {
     let selector = event.path[1].id
-    add_input_div_from_button(selector)
+    add_input_div_from_button(selector, event.target.id)
 
-    let button = document.querySelector("#" + event.path[0].id)
+    // let button = document.querySelector("#" + event.path[0].id)
 
-    button.parentNode.appendChild(button)
+    // button.parentNode.appendChild(button)
 }
 
 /**
@@ -403,9 +383,9 @@ function add_fixed_box(orig_id, div, section, section_value, text="Fixed:") {
 
 function fixed_box_change(event) {
     // Gets id information
-    source_id = get_source_id(event.target.id)
-    section_id = get_source_id(event.originalEvent.path[2].id)
-    subsection_id = get_original_id(event.originalEvent.path[2].id)
+    let source_id = get_source_id(event.target.id)
+    let section_id = get_source_id(event.originalEvent.path[2].id)
+    let subsection_id = get_original_id(event.originalEvent.path[2].id)
 
     data_sheet_variables_dict[section_id][subsection_id]["display_values"][source_id]["default_fixed_value"] = event.target.checked
 
@@ -428,15 +408,48 @@ function create_removal_button(source_id) {
     return button
 }
 
+function reset(event) {
+    let source_id = get_source_id(event.target.id)
+
+    let source_element = document.querySelector("#data_sheet_variables")
+    while (source_element.firstChild) {
+        source_element.removeChild(source_element.firstChild)
+    }
+    
+    if (source_id == "data_sheet_variables") {
+        data_sheet_variables_dict = JSON.parse(JSON.stringify(data_sheet_variables_dict_original))
+        add_dict_elements("#data_sheet_variables", data_sheet_variables_dict_original)
+        update_outputs()
+    }
+    else {
+        let section = get_source_id(source_id)
+        let section_value = get_original_id(source_id)
+        data_sheet_variables_dict[section][section_value] = JSON.parse(JSON.stringify(data_sheet_variables_dict_original[section][section_value]))
+        add_dict_elements("#data_sheet_variables", data_sheet_variables_dict)
+        update_outputs()
+    }
+}
+
+function create_reset_button(source_id, text) {
+    let button = document.createElement("button")
+    button.type = "button"
+    button.textContent = text
+    button.id = source_id + "_resetbutton"
+    button.style.width = "500px"
+    button.onclick = reset
+
+    return button
+}
+
 /**
  * Removes the elements in the given parent container in the event
  * @param {object} event the jquery event
  */
 function remove_elements(event) {
     // Gets id information
-    source_id = get_source_id(event.target.id)
-    section_id = get_source_id(event.path[2].id)
-    subsection_id = get_original_id(event.path[2].id)
+    let source_id = get_source_id(event.target.id)
+    let section_id = get_source_id(event.path[2].id)
+    let subsection_id = get_original_id(event.path[2].id)
 
     // Deletes the information from the corresponding global variables
     delete data_sheet_values[source_id]
@@ -457,15 +470,14 @@ function remove_elements(event) {
  * Adds new elements to a given element based on the data_sheet_variables formatting through json
  * @param {string} selector The id of the element you want to add the new elements on top of
  * @param {object} dict The object that contains the information for each new element
- * @param {object} value_dict The object that contains only the raw values for each element id
  */
-function add_dict_elements(selector, dict, value_dict) {
+function add_dict_elements(selector, dict) {
     // Runs through every section in the object (ex. Monthly Overhead, Labor Burden, Annual Profit & Owner Salary, etc.)
-    for (const section in dict) {
+    for (let section in dict) {
         section_values[section] = {}
 
         // Runs through each of the section values (ex. display_name, inputs, outputs)
-        for (const section_value in dict[section]) {
+        for (let section_value in dict[section]) {
 
             if (section_value == "display_name") {
                 // Creates a new element for the section name (ex. Monthly Overhead)
@@ -481,16 +493,7 @@ function add_dict_elements(selector, dict, value_dict) {
                 section_value_header.textContent = dict[section][section_value]["display_name"]
                 document.querySelector(selector).appendChild(section_value_header)
             }
-            
-            let allow_additional_input_values = false
-            if (typeof dict[section][section_value] == "object"){
-                if ("allow_additional_input_values" in dict[section][section_value]) {
-                    if (dict[section][section_value]["allow_additional_input_values"]) {
-                        allow_additional_input_values = true
-                    }
-                }
-            }
-            
+
             if (section_value != "display_name") {
 
                 let allow_label_editing = false
@@ -518,6 +521,20 @@ function add_dict_elements(selector, dict, value_dict) {
                     allow_removal = true
                 }
 
+                let allow_additional_input_values = false
+                if ("allow_additional_input_values" in dict[section][section_value]) {
+                    if (dict[section][section_value]["allow_additional_input_values"]) {
+                        allow_additional_input_values = true
+                    }
+                }
+
+                let allow_reset = false
+                if ("allow_reset" in dict[section][section_value]) {
+                    if (dict[section][section_value]["allow_reset"] == true) {
+                        allow_reset = true
+                    }
+                }
+
                 section_values[section][section_value] = []
 
                 let section_value_article = document.createElement("article")
@@ -525,7 +542,7 @@ function add_dict_elements(selector, dict, value_dict) {
                 section_value_article.id = article_id
                 document.querySelector(selector).appendChild(section_value_article)
             
-                for (const key in dict[section][section_value]["display_values"]) {
+                for (let key in dict[section][section_value]["display_values"]) {
 
                     let allow_label_editing_temp = allow_label_editing
                     if ("allow_label_editing" in dict[section][section_value]["display_values"][key]) {
@@ -559,11 +576,13 @@ function add_dict_elements(selector, dict, value_dict) {
 
                     if (dict[section][section_value]["display_values"][key]["user_interaction"] == "input") {
                         if ("default_value" in dict[section][section_value]["display_values"][key]){
-                            value_dict[key] = dict[section][section_value]["display_values"][key]["default_value"]
+                            update_data_sheet_value(key, dict[section][section_value]["display_values"][key]["default_value"], false)
+                            // data_sheet_values[key] = dict[section][section_value]["display_values"][key]["default_value"]
                         }
 
                         else {
-                            value_dict[key] = 0
+                            update_data_sheet_value(key, 0, false)
+                            // data_sheet_values[key] = 0
                         }
                         
                         if ("format" in dict[section][section_value]["display_values"][key]) {
@@ -571,31 +590,31 @@ function add_dict_elements(selector, dict, value_dict) {
                             let curr_label
                             switch (dict[section][section_value]["display_values"][key]["format"]) {
                                 case "curr":
-                                    input = create_input(key, key, "text", value_dict[key], true, "float")
+                                    input = create_input(key, key, "text", data_sheet_values[key], true, "float")
                                     curr_label = create_currency_label()
                                     div.appendChild(curr_label)
                                     div.appendChild(input)
                                     break
 
                                 case "int":
-                                    input = create_input(key, key, "text", value_dict[key], true, "int")
+                                    input = create_input(key, key, "text", data_sheet_values[key], true, "int")
                                     div.appendChild(input)
                                     break
 
                                 case "perc":
-                                    input = create_input(key, key, "text", value_dict[key], true, "perc")
+                                    input = create_input(key, key, "text", data_sheet_values[key], true, "perc")
                                     div.appendChild(input)
                                     break
 
                                 default:
-                                    input = create_input(key, key, "text", value_dict[key], true, "float")
+                                    input = create_input(key, key, "text", data_sheet_values[key], true, "float")
                                     curr_label = create_currency_label()
                                     div.appendChild(curr_label)
                                     div.appendChild(input)
                             }
                         }
                         else {
-                            let input = create_input(key, key, "text", value_dict[key], true, "float")
+                            let input = create_input(key, key, "text", data_sheet_values[key], true, "float")
                             let curr_label = create_currency_label()
                             div.appendChild(curr_label)
                             div.appendChild(input)
@@ -630,7 +649,7 @@ function add_dict_elements(selector, dict, value_dict) {
                     }
 
                     else if (dict[section][section_value]["display_values"][key]["user_interaction"] == "output") {
-                        output_label = document.createElement("label")
+                        let output_label = document.createElement("label")
                         output_label.id = key + "_value"
 
                         div.appendChild(output_label)
@@ -641,19 +660,35 @@ function add_dict_elements(selector, dict, value_dict) {
                         document.querySelector("#" + article_id).appendChild(div)
                     }
                 }
-            }
-            if (allow_additional_input_values) {
-                let button = document.createElement("button")
-                button.type = "button"
-                button.textContent = "New Input"
-                button.id = section + "_" + section_value + "_button"
-                button.style.width = "100px"
-                button.onclick = add_new_elements_from_input_button
-
-                document.querySelector("#" + section + "_" + section_value).appendChild(button)
+                if (allow_additional_input_values) {
+                    let button = document.createElement("button")
+                    button.type = "button"
+                    button.textContent = "New Input"
+                    button.id = section + "_" + section_value + "_button"
+                    button.style.width = "100px"
+                    button.onclick = add_new_elements_from_input_button
+    
+                    document.querySelector("#" + section + "_" + section_value).appendChild(button)
+                }
+    
+                if (allow_reset) {
+                    // console.log(section_value)
+                    let button = create_reset_button(section + "_" + section_value, "Reset Section to Default")
+                    document.querySelector("#" + section + "_" + section_value).appendChild(button)
+                    // let button = document.createElement("button")
+                    // button.type = "button"
+                    // button.textContent = "New Input"
+                    // button.id = section + "_" + section_value + "_button"
+                    // button.style.width = "100px"
+                    // button.onclick = add_new_elements_from_input_button
+    
+                    // document.querySelector("#" + section + "_" + section_value).appendChild(button)
+                }
             }
         }
     }
+    let button = create_reset_button("data_sheet_variables", "Reset to Default")
+    document.querySelector("#data_sheet_variables").appendChild(button)
 }
 
 function update_outputs() {
@@ -664,8 +699,8 @@ function update_monthly_overhead_outputs() {
     let monthly_overhead_fixed_sum = 0
     let monthly_overhead_variable_sum = 0
 
-    for (key of section_values["monthly_overhead"]["inputs"]) {
-        fixed_input = document.querySelector("#" + key + "_fixed")
+    for (let key of section_values["monthly_overhead"]["inputs"]) {
+        let fixed_input = document.querySelector("#" + key + "_fixed")
         if (fixed_input) {
             if (fixed_input.checked) {
                 monthly_overhead_fixed_sum += data_sheet_values[key]
@@ -698,7 +733,7 @@ function main() {
     .then(data => {
         data_sheet_variables_dict_original = data[0]
         data_sheet_variables_dict = JSON.parse(JSON.stringify(data[0]))
-        add_dict_elements("#data_sheet_variables", data_sheet_variables_dict, data_sheet_values)
+        add_dict_elements("#data_sheet_variables", data_sheet_variables_dict)
         update_outputs()
     })
 }
