@@ -1,6 +1,6 @@
 // To-Do:
-// Add reset button for all variables (and individual sections)
 // Fix Memory Leaks from reset buttons
+// Add function docstrings
 
 // Change total roofing days to also allow for a total to be set (hiding the monthly values if the total is set)
 // Fica, futa, suta, gen liability, workers comp into output values instead of input
