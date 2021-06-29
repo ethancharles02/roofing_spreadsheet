@@ -1,12 +1,12 @@
 // To-Do:
 // Fix Memory Leaks from reset buttons
-// Add function docstrings
 
 // Change total roofing days to also allow for a total to be set (hiding the monthly values if the total is set)
 // Fica, futa, suta, gen liability, workers comp into output values instead of input
 // Materials should default to zero, qty, name, and cost should all still be inputs
 // Separate add_dict_elements into smaller functions
 // Move removal button to a harder to click place or make a confirmation message
+// Default parameters won't work on internet explorer
 
 'use strict'
 
@@ -141,12 +141,18 @@ function set_label_editable(label_id, parent_container) {
  * if update_dict is true, it will also update the data_sheet_variables_dict
  * @param {string} id the id of the item
  * @param {float} new_value the value to be updated
+ * @param {boolean} update_display_value updates the text content of the id if set to true
+ * @param {string} display_value the display value to update the text content with
  * @param {boolean} update_dict if true, it will update data_sheet_variables_dict with the new value
  * @param {string} section_id section id in the dict (ie. monthly_overhead)
  * @param {string} subsection_id subsection id (ie. inputs)
  */
-function update_data_sheet_value(id, new_value, update_dict = true, section_id = "", subsection_id = "") {
+function update_data_sheet_value(id, new_value, update_display_value = false, display_value = "", update_dict = true, section_id = "", subsection_id = "") {
     data_sheet_values[id] = new_value
+
+    if (update_display_value) {
+        document.querySelector("#" + id).textContent = display_value
+    }
 
     if (update_dict) {
         data_sheet_variables_dict[section_id][subsection_id]["display_values"][id]["default_value"] = new_value
@@ -164,6 +170,13 @@ function restrict_input(event) {
     let section_id = get_source_id(event.originalEvent.path[2].id)
     let subsection_id = get_original_id(event.originalEvent.path[2].id)
 
+    let is_int = false
+    if ("format" in data_sheet_variables_dict[section_id][subsection_id]["display_values"][target_id]) {
+        if (data_sheet_variables_dict[section_id][subsection_id]["display_values"][target_id]["format"] == "int") {
+            is_int = true
+        }
+    }
+
     // If the input isn't a number and isn't an empty string, it reverts it to the previous value
     if (!jQuery.isNumeric(value) && value != "") {
         event.target.value = data_sheet_values[target_id]
@@ -174,15 +187,20 @@ function restrict_input(event) {
     // If the value is an int, it is simply stored as is
     else {
         if (value.includes(".")) {
-            update_data_sheet_value(target_id, parseFloat(value).toFixed(2), true, section_id, subsection_id)
+            if (is_int) {
+                event.target.value = data_sheet_values[target_id]
+            }
+            else {
+                update_data_sheet_value(target_id, parseFloat(value).toFixed(2), false, "", true, section_id, subsection_id)
+            }
             // data_sheet_values[target_id] = parseFloat(value).toFixed(2)
         }
         else if(value == "") {
-            update_data_sheet_value(target_id, 0, true, section_id, subsection_id)
+            update_data_sheet_value(target_id, 0, false, "", true, section_id, subsection_id)
             // data_sheet_values[target_id] = value
         }
         else {
-            update_data_sheet_value(target_id, parseFloat(value), true, section_id, subsection_id)
+            update_data_sheet_value(target_id, parseInt(value), false, "", true, section_id, subsection_id)
             // data_sheet_values[target_id] = parseFloat(value)
         }
     }
@@ -197,7 +215,7 @@ function focus_input(event) {
 
     // Updates the value to be the input version of the value
     if (typeof(data_sheet_values[target_id]) == "undefined") {
-        update_data_sheet_value(target_id, 0, false)
+        update_data_sheet_value(target_id, 0, false, "", false)
         // data_sheet_values[target_id] = 0
     }
     event.target.value = data_sheet_values[target_id]
@@ -322,7 +340,7 @@ function add_input_div_from_button(selector, button_id) {
 
     additional_inputs.push(newid)
     num_additional_inputs += 1
-    update_data_sheet_value(newid, 0, false)
+    update_data_sheet_value(newid, 0, false, "", false)
     // data_sheet_values[newid] = 0
 
     section_values[section_id][subsection_id].push(newid)
@@ -342,7 +360,14 @@ function add_input_div_from_button(selector, button_id) {
 
     document.querySelector("#" + selector).insertBefore(div, document.querySelector("#" + button_id))
 
-    add_query_on_input(newid, "blur", set_event_target_currency)
+    if ("format" in data_sheet_variables_dict[section_id][subsection_id]["display_values"][newid]) {
+        if (data_sheet_variables_dict[section_id][subsection_id]["display_values"][newid]["format"] != "int") {
+            add_query_on_input(newid, "blur", set_event_target_currency)
+        }
+    }
+    else {
+        add_query_on_input(newid, "blur", set_event_target_currency)
+    }
     add_query_on_input(newid, "blur", update_outputs, data_sheet_variables_dict)
     add_query_on_input(newid, "input", restrict_input)
     add_query_on_input(newid, "focus", focus_input)
@@ -600,12 +625,12 @@ function add_dict_elements(selector, dict) {
 
                     if (dict[section][section_value]["display_values"][key]["user_interaction"] == "input") {
                         if ("default_value" in dict[section][section_value]["display_values"][key]){
-                            update_data_sheet_value(key, dict[section][section_value]["display_values"][key]["default_value"], false)
+                            update_data_sheet_value(key, dict[section][section_value]["display_values"][key]["default_value"], false, "", false)
                             // data_sheet_values[key] = dict[section][section_value]["display_values"][key]["default_value"]
                         }
 
                         else {
-                            update_data_sheet_value(key, 0, false)
+                            update_data_sheet_value(key, 0, false, "", false)
                             // data_sheet_values[key] = 0
                         }
                         
@@ -658,7 +683,14 @@ function add_dict_elements(selector, dict) {
                         document.querySelector("#" + article_id).appendChild(div)
 
                         // text input queries
-                        add_query_on_input(key, "blur", set_event_target_currency)
+                        if ("format" in dict[section][section_value]["display_values"][key]) {
+                            if (dict[section][section_value]["display_values"][key]["format"] != "int") {
+                                add_query_on_input(key, "blur", set_event_target_currency)
+                            }
+                        }
+                        else {
+                            add_query_on_input(key, "blur", set_event_target_currency)
+                        }
                         add_query_on_input(key, "blur", update_outputs, dict)
                         add_query_on_input(key, "input", restrict_input)
                         add_query_on_input(key, "focus", focus_input)
@@ -674,7 +706,7 @@ function add_dict_elements(selector, dict) {
 
                     else if (dict[section][section_value]["display_values"][key]["user_interaction"] == "output") {
                         let output_label = document.createElement("label")
-                        output_label.id = key + "_value"
+                        output_label.id = key
 
                         div.appendChild(output_label)
                         document.querySelector("#" + article_id).appendChild(div)
@@ -717,6 +749,10 @@ function add_dict_elements(selector, dict) {
 
 function update_outputs() {
     update_monthly_overhead_outputs()
+    update_labor_burden_outputs()
+    update_ann_profit_owner_sal_outputs()
+    update_annual_roofing_days_outputs()
+    update_daily_costs_outputs()
 }
 
 function update_monthly_overhead_outputs() {
@@ -741,11 +777,75 @@ function update_monthly_overhead_outputs() {
         }
     }
 
-    document.querySelector("#est_monthly_expenses_fixed_value").textContent = format_value(monthly_overhead_fixed_sum, "curr")
-    document.querySelector("#est_monthly_expenses_variable_value").textContent = format_value(monthly_overhead_variable_sum, "curr")
-    // document.querySelector("#est_annual_expenses_fixed_value").textContent =
-    // document.querySelector("#est_annual_expenses_variable_value").textContent =
-    // document.querySelector("#est_total_annual_expenses_value").textContent =
+    update_data_sheet_value("est_monthly_expenses_fixed", monthly_overhead_fixed_sum, true, format_value(monthly_overhead_fixed_sum, "curr"), false)
+    update_data_sheet_value("est_monthly_expenses_variable", monthly_overhead_variable_sum, true, format_value(monthly_overhead_variable_sum, "curr"), false)
+    
+    let annual_expenses_fixed = data_sheet_values["est_monthly_expenses_fixed"] * 12
+    update_data_sheet_value("est_annual_expenses_fixed", annual_expenses_fixed, true, format_value(annual_expenses_fixed, "curr"), false)
+    
+    let annual_expenses_variable = data_sheet_values["est_monthly_expenses_variable"] * 12
+    update_data_sheet_value("est_annual_expenses_variable", annual_expenses_variable, true, format_value(annual_expenses_variable, "curr"), false)
+    
+    let total_annual_expenses = annual_expenses_variable + annual_expenses_fixed
+    update_data_sheet_value("est_total_annual_expenses", total_annual_expenses, true, format_value(total_annual_expenses, "curr"), false)
+}
+
+function update_labor_burden_outputs() {
+    let fica = data_sheet_values["hourly_rate"] * 0.0765
+    update_data_sheet_value("fica_rate", fica, true, format_value(fica, "curr"), false)
+    
+    let futa = data_sheet_values["hourly_rate"] * 0.06
+    update_data_sheet_value("futa_rate", futa, true, format_value(futa, "curr"), false)
+    
+    let suta = data_sheet_values["hourly_rate"] * 0.03
+    update_data_sheet_value("suta_rate", suta, true, format_value(suta, "curr"), false)
+    
+    let liability = data_sheet_values["hourly_rate"] * (4/1000)
+    update_data_sheet_value("liability_insurance", liability, true, format_value(liability, "curr"), false)
+    
+    let workers_comp = data_sheet_values["hourly_rate"] * (15/100)
+    update_data_sheet_value("workers_comp", workers_comp, true, format_value(workers_comp, "curr"), false)
+    
+    let total_hourly_cost = data_sheet_values["hourly_rate"] + fica + futa + suta + liability + workers_comp
+    update_data_sheet_value("total_hourly_cost", total_hourly_cost, true, format_value(total_hourly_cost, "curr"), false)
+    
+    let tax_burden = total_hourly_cost - data_sheet_values["hourly_rate"]
+    update_data_sheet_value("tax_burden", tax_burden, true, format_value(tax_burden, "curr"), false)
+}
+
+function update_ann_profit_owner_sal_outputs() {
+    let profit_target = 0
+    if (data_sheet_values["total_roofing_days"] != 0 && data_sheet_values["total_roofing_days"] !== undefined) {
+        profit_target = data_sheet_values["annual_profit"] / data_sheet_values["total_roofing_days"]
+    }
+
+    update_data_sheet_value("daily_profit_target", profit_target, true, format_value(profit_target, "curr"), false)
+}
+
+function update_annual_roofing_days_outputs() {
+    let total_roofing_days = 0
+    for (let key of section_values["annual_roofing_days"]["inputs"]) {
+        total_roofing_days += data_sheet_values[key]
+    }
+    update_data_sheet_value("total_roofing_days", total_roofing_days, true, format_value(total_roofing_days, "int"), false)
+}
+
+function update_daily_costs_outputs() {
+    let daily_overhead_cost = 0
+    if (data_sheet_values["total_roofing_days"] != 0 && data_sheet_values["total_roofing_days"] !== undefined) {
+        daily_overhead_cost = data_sheet_values["est_total_annual_expenses"] / data_sheet_values["total_roofing_days"]
+    }
+
+    update_data_sheet_value("daily_overhead_cost", daily_overhead_cost, true, format_value(daily_overhead_cost, "curr"), false)
+
+    let daily_crew_labor_cost = data_sheet_values["total_hourly_cost"] * data_sheet_values["num_workers"] * 8
+    update_data_sheet_value("daily_crew_labor_cost", daily_crew_labor_cost, true, format_value(daily_crew_labor_cost, "curr"), false)
+
+    let daily_profit_target = data_sheet_values["daily_profit_target"]
+    update_data_sheet_value("daily_cost_profit_target", daily_profit_target, true, format_value(daily_profit_target, "curr"), false)
+
+    let daily_cost_total = daily_overhead_cost + daily_crew_labor_cost + daily_profit_target
+    update_data_sheet_value("daily_cost_total", daily_cost_total, true, format_value(daily_cost_total, "curr"), false)
 }
 
 function main() {

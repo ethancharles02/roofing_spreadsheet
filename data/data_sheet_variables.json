@@ -120,6 +120,226 @@
                     }
                 }
             }
+        },
+
+        "labor_burden": {
+            "display_name": "Labor Burden",
+            "inputs": {
+                "display_name": "Inputs",
+                "allow_reset": true,
+                "display_values": {
+                    "hourly_rate": {
+                        "display_name": "Hourly Rate",
+                        "user_interaction": "input",
+                        "default_value": 0,
+                        "format": "curr"
+                    }
+                }
+            },
+            "outputs": {
+                "display_name": "Outputs",
+                "display_values": {
+                    "fica_rate": {
+                        "display_name": "FICA 7.65%",
+                        "formula": "hourly_rate*0.0765",
+                        "user_interaction": "output"
+                    },
+                    "futa_rate": {
+                        "display_name": "FUTA 6.0%",
+                        "formula": "hourly_rate*0.06",
+                        "user_interaction": "output"
+                    },
+                    "suta_rate": {
+                        "display_name": "SUTA 3.0%",
+                        "formula": "hourly_rate*0.03",
+                        "user_interaction": "output"
+                    },
+                    "liability_insurance": {
+                        "display_name": "Gen Liability Insu @ $4/$1000",
+                        "formula": "hourly_rate*(4/1000)",
+                        "user_interaction": "output"
+                    },
+                    "workers_comp": {
+                        "display_name": "Workers Comp @ $15/$100",
+                        "formula": "hourly_rate*(15/100)",
+                        "user_interaction": "output"
+                    },
+                    "total_hourly_cost": {
+                        "display_name": "Total Hourly Cost",
+                        "formula": "hourly_rate + SUM(B34:B42)",
+                        "user_interaction": "output"
+                    },
+                    "tax_burden": {
+                        "display_name": "Tax Burden",
+                        "formula": "total_hourly_cost - hourly_rate",
+                        "user_interaction": "output"
+                    }
+                }
+            }
+        },
+
+        "ann_profit_owner_sal": {
+            "display_name": "Annual Profit & Owner Salary",
+            "inputs": {
+                "display_name": "Inputs",
+                "allow_reset": true,
+                "display_values": {
+                    "annual_profit": {
+                        "display_name": "Annual Profit",
+                        "user_interaction": "input",
+                        "default_value": 0,
+                        "format": "curr"
+                    }
+                }
+            },
+            "outputs": {
+                "display_name": "Outputs",
+                "display_values": {
+                    "daily_profit_target": {
+                        "display_name": "Daily Profit Target",
+                        "formula": "annual_profit / total_roofing_days",
+                        "user_interaction": "output"
+                    }
+                }
+            }
+        },
+
+        "crew_size": {
+            "display_name": "Crew Size",
+            "inputs": {
+                "display_name": "Inputs",
+                "allow_reset": true,
+                "display_values": {
+                    "num_workers": {
+                        "display_name": "Number of workers",
+                        "user_interaction": "input",
+                        "default_value": 0,
+                        "format": "int"
+                    }
+                }
+            }
+        },
+
+        "annual_roofing_days": {
+            "display_name": "Estimated Annual Roofing Days",
+            "inputs": {
+                "display_name": "Inputs",
+                "allow_reset": true,
+                "display_values": {
+                    "jan_roofing_days": {
+                        "display_name": "Jan",
+                        "user_interaction": "input",
+                        "default_value": 0,
+                        "format": "int"
+                    },
+                    "feb_roofing_days": {
+                        "display_name": "Feb",
+                        "user_interaction": "input",
+                        "default_value": 0,
+                        "format": "int"
+                    },
+                    "mar_roofing_days": {
+                        "display_name": "Mar",
+                        "user_interaction": "input",
+                        "default_value": 0,
+                        "format": "int"
+                    },
+                    "apr_roofing_days": {
+                        "display_name": "Apr",
+                        "user_interaction": "input",
+                        "default_value": 0,
+                        "format": "int"
+                    },
+                    "may_roofing_days": {
+                        "display_name": "May",
+                        "user_interaction": "input",
+                        "default_value": 0,
+                        "format": "int"
+                    },
+                    "jun_roofing_days": {
+                        "display_name": "Jun",
+                        "user_interaction": "input",
+                        "default_value": 0,
+                        "format": "int"
+                    },
+                    "jul_roofing_days": {
+                        "display_name": "Jul",
+                        "user_interaction": "input",
+                        "default_value": 0,
+                        "format": "int"
+                    },
+                    "aug_roofing_days": {
+                        "display_name": "Aug",
+                        "user_interaction": "input",
+                        "default_value": 0,
+                        "format": "int"
+                    },
+                    "sep_roofing_days": {
+                        "display_name": "Sep",
+                        "user_interaction": "input",
+                        "default_value": 0,
+                        "format": "int"
+                    },
+                    "oct_roofing_days": {
+                        "display_name": "Oct",
+                        "user_interaction": "input",
+                        "default_value": 0,
+                        "format": "int"
+                    },
+                    "nov_roofing_days": {
+                        "display_name": "Nov",
+                        "user_interaction": "input",
+                        "default_value": 0,
+                        "format": "int"
+                    },
+                    "dec_roofing_days": {
+                        "display_name": "Dec",
+                        "user_interaction": "input",
+                        "default_value": 0,
+                        "format": "int"
+                    }
+                }
+            },
+            "outputs": {
+                "display_name": "Outputs",
+                "display_values": {
+                    "total_roofing_days": {
+                        "display_name": "Total Annual Roofing Days",
+                        "formula": "SUM(Roofing Days)",
+                        "user_interaction": "output",
+                        "format": "int"
+                    }
+                }
+            }
+        },
+
+        "daily_costs": {
+            "display_name": "Daily Costs",
+            "outputs": {
+                "display_name": "Outputs",
+                "display_values": {
+                    "daily_overhead_cost": {
+                        "display_name": "Daily Overhead Cost",
+                        "formula": "est_total_annual_expenses / total_roofing_days",
+                        "user_interaction": "output"
+                    },
+                    "daily_crew_labor_cost": {
+                        "display_name": "Daily Labor Cost for Crew 8hr Day",
+                        "formula": "total_hourly_cost * num_workers * 8",
+                        "user_interaction": "output"
+                    },
+                    "daily_cost_profit_target": {
+                        "display_name": "Daily Profit Target",
+                        "formula": "annual_profit / total_roofing_days",
+                        "user_interaction": "output"
+                    },
+                    "daily_cost_total": {
+                        "display_name": "Daily Cost To Work (Overhead, Labor Cost, Profit Goal)",
+                        "formula": "daily_overhead_cost + daily_crew_labor_cost + daily_profit_target",
+                        "user_interaction": "output"
+                    }
+                }
+            }
         }
     }
 ]
