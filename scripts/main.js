@@ -136,6 +136,15 @@ function set_label_editable(label_id, parent_container) {
     add_query_on_input(input_id, "blur", hide_label_input)
 }
 
+/**
+ * Updates the value at a spot in the data_sheet_values dict, 
+ * if update_dict is true, it will also update the data_sheet_variables_dict
+ * @param {string} id the id of the item
+ * @param {float} new_value the value to be updated
+ * @param {boolean} update_dict if true, it will update data_sheet_variables_dict with the new value
+ * @param {string} section_id section id in the dict (ie. monthly_overhead)
+ * @param {string} subsection_id subsection id (ie. inputs)
+ */
 function update_data_sheet_value(id, new_value, update_dict = true, section_id = "", subsection_id = "") {
     data_sheet_values[id] = new_value
 
@@ -381,6 +390,10 @@ function add_fixed_box(orig_id, div, section, section_value, text="Fixed:") {
     div.appendChild(fixed_input)
 }
 
+/**
+ * Updates the data_sheet_variables_dict with the change that was made, updates outputs
+ * @param {object} event The jquery event
+ */
 function fixed_box_change(event) {
     // Gets id information
     let source_id = get_source_id(event.target.id)
@@ -408,6 +421,11 @@ function create_removal_button(source_id) {
     return button
 }
 
+/**
+ * Resets everything back to default by deleting all the children in the parent container, 
+ * replacing that section with the corresponding original values
+ * @param {object} event The event from jquery
+ */
 function reset(event) {
     let source_id = get_source_id(event.target.id)
 
@@ -430,7 +448,13 @@ function reset(event) {
     }
 }
 
-function create_reset_button(source_id, text) {
+/**
+ * Creates a reset button with the id + _resetbutton as the id
+ * @param {string} source_id The parent container id
+ * @param {string} [text="Reset"] The text to be displayed on the button
+ * @returns 
+ */
+function create_reset_button(source_id, text="Reset") {
     let button = document.createElement("button")
     button.type = "button"
     button.textContent = text
