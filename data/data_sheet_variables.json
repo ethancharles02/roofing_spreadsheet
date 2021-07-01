@@ -14,7 +14,7 @@
                         "default_fixed_value": true,
                         "user_interaction": "input",
                         "default_value": 0,
-                        "format": "curr"
+                        "format": "float"
                     },
                     "insurance": {
                         "display_name": "Business Insurance",
@@ -306,7 +306,8 @@
                     "total_roofing_days": {
                         "display_name": "Total Annual Roofing Days",
                         "formula": "SUM(Roofing Days)",
-                        "user_interaction": "output",
+                        "total_up_months": true,
+                        "user_interaction": "input",
                         "format": "int"
                     }
                 }
@@ -336,6 +337,246 @@
                     "daily_cost_total": {
                         "display_name": "Daily Cost To Work (Overhead, Labor Cost, Profit Goal)",
                         "formula": "daily_overhead_cost + daily_crew_labor_cost + daily_profit_target",
+                        "user_interaction": "output"
+                    }
+                }
+            }
+        },
+        
+        "est_labor_costs": {
+            "display_name": "Estimated Labor Costs",
+            "inputs": {
+                "display_name": "Inputs",
+                "allow_reset": true,
+                "display_values": {
+                    "total_days": {
+                        "display_name": "Total Days",
+                        "user_interaction": "input",
+                        "default_value": 0,
+                        "format": "int"
+                    }
+                }
+            },
+            "outputs": {
+                "display_name": "Outputs",
+                "display_values": {
+                    "total_labor_cost": {
+                        "display_name": "Total Labor $",
+                        "formula": "total_days * daily_crew_labor_cost",
+                        "user_interaction": "output"
+                    }
+                }
+            }
+        },
+
+        "materials_header": {
+            "display_name": "Materials",
+            "inputs": {
+                "display_name": "Inputs",
+                "allow_reset": true,
+                "allow_additional_input_values": true,
+                "allow_removal": true,
+                "allow_label_editing": true,
+                "display_values": {
+                    "materials": {
+                        "display_name": "Material",
+                        "user_interaction": "input",
+                        "default_value": 0,
+                        "format": "curr"
+                    }
+                }
+            },
+            "outputs": {
+                "display_name": "Outputs",
+                "display_values": {
+                    "total_materials_cost": {
+                        "display_name": "Total Materials",
+                        "formula": "SUM(Materials)",
+                        "user_interaction": "output"
+                    }
+                }
+            }
+        },
+
+        "bid_percentage_markup": {
+            "display_name": "Typical Bid With Percentage Markup",
+            "inputs": {
+                "display_name": "Inputs",
+                "allow_reset": true,
+                "display_values": {
+                    "markup_perc": {
+                        "display_name": "Enter Markup %",
+                        "user_interaction": "input",
+                        "default_value": 0,
+                        "format": "perc"
+                    }
+                }
+            },
+            "outputs": {
+                "display_name": "Outputs",
+                "display_values": {
+                    "markup_cost": {
+                        "display_name": "Markup Cost",
+                        "formula": "(total_materials_cost + total_labor_cost) * markup_perc",
+                        "user_interaction": "output"
+                    },
+                    "material_labor_cost": {
+                        "display_name": "Add Material/Labor",
+                        "formula": "total_labor_cost + total_materials_cost",
+                        "user_interaction": "output"
+                    },
+                    "total_price_1": {
+                        "display_name": "TOTAL BID PRICE",
+                        "formula": "markup_cost + total_labor_cost + total_materials_cost",
+                        "user_interaction": "output"
+                    },
+                    "minus_overhead": {
+                        "display_name": "Minus Overhead*",
+                        "formula": "(daily_overhead_cost + daily_profit_target) * total_days",
+                        "formula_large": "daily_overhead_cost * total_days",
+                        "formula_large_2": "daily_overhead_cost * total_days",
+                        "user_interaction": "output"
+                    },
+                    "total_materials_cost_display": {
+                        "display_name": "Minus Materials",
+                        "formula": "already set",
+                        "user_interaction": "output"
+                    },
+                    "total_labor_cost_display": {
+                        "display_name": "Minus Labor",
+                        "formula": "already set",
+                        "user_interaction": "output"
+                    },
+                    "total_profit_1": {
+                        "display_name": "TOTAL Profit=",
+                        "formula": "total_price_1 - minus_overhead - total_materials_cost - total_labor_cost",
+                        "user_interaction": "output"
+                    },
+                    "daily_profit_1": {
+                        "display_name": "Daily Profit",
+                        "formula": "total_profit_1 / total_days",
+                        "user_interaction": "output"
+                    },
+                    "difference_daily_profit_goal_1": {
+                        "display_name": "Difference of Daily Profit Goal**",
+                        "formula": "daily_profit_1 - daily_profit_target",
+                        "user_interaction": "output"
+                    }
+                }
+            }
+        },
+
+        "materials_labor_same": {
+            "display_name": "Materials and Labor equal the same",
+            "outputs": {
+                "display_name": "Outputs",
+                "display_values": {
+                    "material_x2": {
+                        "display_name": "Material x2",
+                        "formula": "total_materials_cost * 2",
+                        "user_interaction": "output"
+                    },
+                    "new_material": {
+                        "display_name": "New Material $ x 1.4",
+                        "formula": "material_x2 * 0.014",
+                        "user_interaction": "output"
+                    },
+                    "total_price_2": {
+                        "display_name": "TOTAL BID PRICE",
+                        "formula": "new_material + material_x2",
+                        "user_interaction": "output"
+                    },
+                    "minus_overhead_display": {
+                        "display_name": "Minus Overhead*",
+                        "formula": "already set",
+                        "formula_large": "already set",
+                        "formula_large_2": "already set",
+                        "user_interaction": "output"
+                    },
+                    "total_materials_cost_display_2": {
+                        "display_name": "Minus Materials",
+                        "formula": "already set",
+                        "user_interaction": "output"
+                    },
+                    "total_labor_cost_display_2": {
+                        "display_name": "Minus Labor",
+                        "formula": "already set",
+                        "user_interaction": "output"
+                    },
+                    "total_profit_2": {
+                        "display_name": "TOTAL Profit=",
+                        "formula": "total_price_2 - minus_overhead - total_materials_cost - total_labor_cost ",
+                        "user_interaction": "output"
+                    },
+                    "daily_profit_2": {
+                        "display_name": "Daily Profit",
+                        "formula": "total_profit_2 / total_days",
+                        "user_interaction": "output"
+                    },
+                    "difference_daily_profit_goal_2": {
+                        "display_name": "Difference of Daily Profit Goal**",
+                        "formula": "daily_profit_2 - daily_profit_target",
+                        "user_interaction": "output"
+                    }
+                }
+            }
+        },
+
+        "savage_estimating": {
+            "display_name": "Savage Estimating",
+            "outputs": {
+                "display_name": "Outputs",
+                "display_values": {
+                    "daily_work_cost": {
+                        "display_name": "Daily Cost To Work",
+                        "formula": "total_days * daily_cost_total",
+                        "formula_small_2": "(((daily_overhead_cost + daily_profit_target) / 2) + daily_crew_labor_cost) * total_days",
+                        "formula_large_2": "(((daily_overhead_cost + daily_profit_target) / 2) + daily_crew_labor_cost) * total_days",
+                        "user_interaction": "output"
+                    },
+                    "total_materials_cost_display_3": {
+                        "display_name": "Add Material Costs",
+                        "formula": "already set",
+                        "user_interaction": "output"
+                    },
+                    "total_price": {
+                        "display_name": "TOTAL BID PRICE",
+                        "formula": "daily_work_cost + total_materials_cost",
+                        "user_interaction": "output"
+                    },
+                    "minus_overhead_display_2": {
+                        "display_name": "Minus Overhead*",
+                        "formula": "already set",
+                        "formula_large": "already set",
+                        "formula_small_2": "((daily_overhead_cost + daily_profit_target) / 2) * total_days",
+                        "formula_large_2": "minus_overhead / 2",
+                        "user_interaction": "output"
+                    },
+                    "total_materials_cost_display_4": {
+                        "display_name": "Minus Materials",
+                        "formula": "already set",
+                        "user_interaction": "output"
+                    },
+                    "total_labor_cost_display_3": {
+                        "display_name": "Minus Labor",
+                        "formula": "already set",
+                        "user_interaction": "output"
+                    },
+                    "total_profit": {
+                        "display_name": "TOTAL Profit=",
+                        "formula": "total_days * daily_profit_target",
+                        "formula_large_2": "total_days * (daily_profit_target / 2)",
+                        "user_interaction": "output"
+                    },
+                    "daily_profit_target_display": {
+                        "display_name": "Daily Profit",
+                        "formula": "already set",
+                        "formula_large_2": "daily_profit_target / 2",
+                        "user_interaction": "output"
+                    },
+                    "difference_daily_profit_goal_3": {
+                        "display_name": "Difference of Daily Profit Goal**",
+                        "formula": "0",
                         "user_interaction": "output"
                     }
                 }

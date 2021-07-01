@@ -1,11 +1,11 @@
 // To-Do:
 // Fix Memory Leaks from reset buttons
 
-// Change total roofing days to also allow for a total to be set (hiding the monthly values if the total is set)
-// Fica, futa, suta, gen liability, workers comp into output values instead of input
 // Materials should default to zero, qty, name, and cost should all still be inputs
+// Add cookies that will hold the data_sheet_variables_dict and use that if found
 // Separate add_dict_elements into smaller functions
 // Move removal button to a harder to click place or make a confirmation message
+
 // Default parameters won't work on internet explorer
 
 'use strict'
@@ -23,9 +23,9 @@ var num_additional_inputs = 0
  * @param {string} event The event that will trigger the function (ex. blur, input, focus)
  * @param {function} func The function that gets triggered
  */
-function add_query_on_input(id, event, func) {
+function add_query_on_input(id, event, func, additional_args) {
     // Adds a query onto the element with the given id
-    jQuery("#" + id).on(event, func)
+    jQuery("#" + id).on(event, null, additional_args, func)
 }
 
 /**
@@ -57,7 +57,7 @@ function format_value(value, format="float") {
             return parseInt(value)
         case "perc":
             let perc_value = parseFloat(value)
-            if (perc_value > 1){
+            if (perc_value >= 1){
                 return perc_value + "%"
             }
             else {
@@ -79,7 +79,16 @@ function set_event_target_currency(event) {
     // Checks if the string is a valid number
     if (jQuery.isNumeric(value)) {
         // Sets the value to the formatted version
-        event.target.value = format_value(event.target.value)
+        let format = false
+        if (typeof event.data == "object") {
+            if ("format" in event.data) {
+                format = true
+                event.target.value = format_value(event.target.value, event.data["format"])
+            }
+        }
+        if(!format) {
+            event.target.value = format_value(event.target.value)
+        }
     }
 }
 
@@ -151,7 +160,14 @@ function update_data_sheet_value(id, new_value, update_display_value = false, di
     data_sheet_values[id] = new_value
 
     if (update_display_value) {
-        document.querySelector("#" + id).textContent = display_value
+        let element = document.querySelector("#" + id)
+
+        if (element.nodeName == "LABEL") {
+            document.querySelector("#" + id).textContent = display_value
+        }
+        else if (element.nodeName == "INPUT") {
+            document.querySelector("#" + id).value = display_value
+        }
     }
 
     if (update_dict) {
@@ -170,15 +186,16 @@ function restrict_input(event) {
     let section_id = get_source_id(event.originalEvent.path[2].id)
     let subsection_id = get_original_id(event.originalEvent.path[2].id)
 
-    let is_int = false
+    let format = "float"
     if ("format" in data_sheet_variables_dict[section_id][subsection_id]["display_values"][target_id]) {
-        if (data_sheet_variables_dict[section_id][subsection_id]["display_values"][target_id]["format"] == "int") {
-            is_int = true
-        }
+        format = data_sheet_variables_dict[section_id][subsection_id]["display_values"][target_id]["format"]
+        // if ( == "int") {
+        //     is_int = true
+        // }
     }
 
     // If the input isn't a number and isn't an empty string, it reverts it to the previous value
-    if (!jQuery.isNumeric(value) && value != "") {
+    if ((!jQuery.isNumeric(value) && value != "") && value != ".") {
         event.target.value = data_sheet_values[target_id]
     }
     // If it is a valid number or an empty string, updates the input values
@@ -187,8 +204,11 @@ function restrict_input(event) {
     // If the value is an int, it is simply stored as is
     else {
         if (value.includes(".")) {
-            if (is_int) {
+            if (format == "int") {
                 event.target.value = data_sheet_values[target_id]
+            }
+            else if (format == "perc") {
+                update_data_sheet_value(target_id, parseFloat(value), false, "", true, section_id, subsection_id)
             }
             else {
                 update_data_sheet_value(target_id, parseFloat(value).toFixed(2), false, "", true, section_id, subsection_id)
@@ -368,10 +388,10 @@ function add_input_div_from_button(selector, button_id) {
     else {
         add_query_on_input(newid, "blur", set_event_target_currency)
     }
-    add_query_on_input(newid, "blur", update_outputs, data_sheet_variables_dict)
+    add_query_on_input(newid, "blur", update_outputs)
     add_query_on_input(newid, "input", restrict_input)
     add_query_on_input(newid, "focus", focus_input)
-    add_query_on_change(newid + "_fixed", fixed_box_change, data_sheet_variables_dict)
+    add_query_on_change(newid + "_fixed", fixed_box_change)
     
     if (allow_label_editing) {
         set_label_editable(newid + "_label", div)
@@ -684,14 +704,14 @@ function add_dict_elements(selector, dict) {
 
                         // text input queries
                         if ("format" in dict[section][section_value]["display_values"][key]) {
-                            if (dict[section][section_value]["display_values"][key]["format"] != "int") {
-                                add_query_on_input(key, "blur", set_event_target_currency)
-                            }
+                            let format = dict[section][section_value]["display_values"][key]["format"]
+                            add_query_on_input(key, "blur", set_event_target_currency, {"format": format})
                         }
                         else {
                             add_query_on_input(key, "blur", set_event_target_currency)
                         }
-                        add_query_on_input(key, "blur", update_outputs, dict)
+                        
+                        add_query_on_input(key, "blur", update_outputs)
                         add_query_on_input(key, "input", restrict_input)
                         add_query_on_input(key, "focus", focus_input)
 
@@ -728,7 +748,6 @@ function add_dict_elements(selector, dict) {
                 }
     
                 if (allow_reset) {
-                    // console.log(section_value)
                     let button = create_reset_button(section + "_" + section_value, "Reset Section to Default")
                     document.querySelector("#" + section + "_" + section_value).appendChild(button)
                     // let button = document.createElement("button")
@@ -747,12 +766,44 @@ function add_dict_elements(selector, dict) {
     document.querySelector("#data_sheet_variables").appendChild(button)
 }
 
-function update_outputs() {
-    update_monthly_overhead_outputs()
-    update_labor_burden_outputs()
-    update_ann_profit_owner_sal_outputs()
-    update_annual_roofing_days_outputs()
-    update_daily_costs_outputs()
+function update_outputs(event=[]) {
+
+    let func_list = [
+        update_monthly_overhead_outputs,
+        update_labor_burden_outputs,
+        update_ann_profit_owner_sal_outputs,
+        update_annual_roofing_days_outputs,
+        update_daily_costs_outputs
+    ]
+    
+    if ("data" in event) {
+        let section_id = get_source_id(event.originalEvent.path[2].id)
+        let subsection_id = get_original_id(event.originalEvent.path[2].id)
+
+        if (section_id == "annual_roofing_days") {
+            if (subsection_id == "inputs") {
+                data_sheet_variables_dict["annual_roofing_days"]["outputs"]["display_values"]["total_roofing_days"]["total_up_months"] = true
+            }
+            else if (subsection_id == "outputs") {
+                data_sheet_variables_dict["annual_roofing_days"]["outputs"]["display_values"]["total_roofing_days"]["total_up_months"] = false
+            }
+        }
+    }
+
+    if (typeof event.data == "object") {
+        if ("exclude_list" in event.data) {
+            func_list = func_list.filter(func => !event.data["exclude_list"].includes(func))
+        }
+    }
+
+    for (let func of func_list) {
+        func()
+    }
+    // update_monthly_overhead_outputs()
+    // update_labor_burden_outputs()
+    // update_ann_profit_owner_sal_outputs()
+    // update_annual_roofing_days_outputs()
+    // update_daily_costs_outputs()
 }
 
 function update_monthly_overhead_outputs() {
@@ -823,11 +874,13 @@ function update_ann_profit_owner_sal_outputs() {
 }
 
 function update_annual_roofing_days_outputs() {
-    let total_roofing_days = 0
-    for (let key of section_values["annual_roofing_days"]["inputs"]) {
-        total_roofing_days += data_sheet_values[key]
+    if (data_sheet_variables_dict["annual_roofing_days"]["outputs"]["display_values"]["total_roofing_days"]["total_up_months"]) {
+        let total_roofing_days = 0
+        for (let key of section_values["annual_roofing_days"]["inputs"]) {
+            total_roofing_days += data_sheet_values[key]
+        }
+        update_data_sheet_value("total_roofing_days", total_roofing_days, true, format_value(total_roofing_days, "int"), false)
     }
-    update_data_sheet_value("total_roofing_days", total_roofing_days, true, format_value(total_roofing_days, "int"), false)
 }
 
 function update_daily_costs_outputs() {
