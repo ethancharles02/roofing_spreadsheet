@@ -5,6 +5,7 @@
 // Fix markup % saving the wrong value (ie. 200 is 200% but should be saved as 2)
 // Add comma formatting to make it easier to see magnitudes of numbers
 // Add a material condition to new inputs as well as the a json option for materials
+// Default materials should still be there for each individual project
 // Materials should default to zero, qty, name, and cost should all still be inputs
 // Add cookies that will hold the data_sheet_variables_dict and use that if found
 // Test on different browsers
