@@ -2,10 +2,12 @@
 // Fix Memory Leaks from reset buttons
 
 // Make the input default to zero if only a . is added.
+// Add comma formatting to make it easier to see magnitudes of numbers
 // Materials should default to zero, qty, name, and cost should all still be inputs
 // Add cookies that will hold the data_sheet_variables_dict and use that if found
 // Separate add_dict_elements into smaller functions
 // Move removal button to a harder to click place or make a confirmation message
+// Make enter and the down/up arrow select input boxes below or above
 
 // Default parameters won't work on internet explorer
 
