@@ -1,6 +1,7 @@
 // To-Do:
 // Fix Memory Leaks from reset buttons
 
+// Make the input default to zero if only a . is added.
 // Materials should default to zero, qty, name, and cost should all still be inputs
 // Add cookies that will hold the data_sheet_variables_dict and use that if found
 // Separate add_dict_elements into smaller functions
@@ -20,7 +21,7 @@ var num_additional_inputs = 0
 /**
  * Adds a query to an input text box that will run the given function
  * @param {string} id The id of the input box (without the #)
- * @param {string} event The event that will trigger the function (ex. blur, input, focus)
+ * @param {string} event The event that will trigger the function (ie. blur, input, focus)
  * @param {function} func The function that gets triggered
  */
 function add_query_on_input(id, event, func, additional_args) {
