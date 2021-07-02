@@ -131,8 +131,7 @@
                     "hourly_rate": {
                         "display_name": "Hourly Rate",
                         "user_interaction": "input",
-                        "default_value": 0,
-                        "format": "curr"
+                        "default_value": 0
                     }
                 }
             },
@@ -187,8 +186,7 @@
                     "annual_profit": {
                         "display_name": "Annual Profit",
                         "user_interaction": "input",
-                        "default_value": 0,
-                        "format": "curr"
+                        "default_value": 0
                     }
                 }
             },
@@ -381,8 +379,7 @@
                     "materials": {
                         "display_name": "Material",
                         "user_interaction": "input",
-                        "default_value": 0,
-                        "format": "curr"
+                        "default_value": 0
                     }
                 }
             },

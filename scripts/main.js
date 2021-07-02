@@ -2,9 +2,12 @@
 // Fix Memory Leaks from reset buttons
 
 // Make the input default to zero if only a . is added.
+// Fix markup % saving the wrong value (ie. 200 is 200% but should be saved as 2)
 // Add comma formatting to make it easier to see magnitudes of numbers
+// Add a material condition to new inputs as well as the a json option for materials
 // Materials should default to zero, qty, name, and cost should all still be inputs
 // Add cookies that will hold the data_sheet_variables_dict and use that if found
+// Test on different browsers
 // Separate add_dict_elements into smaller functions
 // Move removal button to a harder to click place or make a confirmation message
 // Make enter and the down/up arrow select input boxes below or above
