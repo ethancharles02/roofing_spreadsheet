@@ -341,6 +341,25 @@
             }
         },
         
+        "project_type_header": {
+            "display_name": "Select A Project",
+            "inputs": {
+                "display_name": "Inputs",
+                "display_values" : {
+                    "project_type": {
+                        "display_name" : "Project",
+                        "user_interaction": "selectbox",
+                        "default_value": "Small Project",
+                        "options": {
+                            "small": "Small Project",
+                            "large": "Large Project",
+                            "small_2": "Small Project 2 Crews",
+                            "large_2": "Large Project 2 Crews"
+                        }
+                    }
+                }
+            }
+        },
         "est_labor_costs": {
             "display_name": "Estimated Labor Costs",
             "inputs": {
@@ -378,8 +397,49 @@
                 "display_values": {
                     "materials": {
                         "display_name": "Material",
-                        "user_interaction": "input",
-                        "default_value": 0
+                        "user_interaction": "material",
+                        "default_values": {
+                            "small": {
+                                "material1": ["50 mil white", 9, 4338],
+                                "material2": ["2\" plates", 1, 99],
+                                "material3": ["2\" screws", 1, 59],
+                                "material4": ["2.5\" Drip Edge", 27, 486],
+                                "material5": ["Cover strip", 3, 162],
+                                "material6": ["Metal patches", 1, 33],
+                                "material7": ["Seperation Sheet", 2, 534]
+                            },
+                            "large": {
+                                "material1": ["50 mil white", 42, 20244],
+                                "material2": ["2\" plates", 4, 396],
+                                "material3": ["4\" screws", 4, 572],
+                                "material4": ["4\" Drip Edge", 180, 3960],
+                                "material5": ["Cover strip", 20, 1080],
+                                "material6": ["Metal patches", 4, 132],
+                                "material7": ["3.25\" #12 screws", 6, 636],
+                                "material8": ["3\" insulation plates", 4, 340],
+                                "material9": ["2 Layers 1\" ISO", 1, 8387]
+                            },
+                            "small_2": {
+                                "material1": ["50 mil white", 9, 4338],
+                                "material2": ["2\" plates", 1, 99],
+                                "material3": ["2\" screws", 1, 59],
+                                "material4": ["2.5\" Drip Edge", 27, 486],
+                                "material5": ["Cover strip", 3, 162],
+                                "material6": ["Metal patches", 1, 33],
+                                "material7": ["Seperation Sheet", 2, 534]
+                            },
+                            "large_2": {
+                                "material1": ["50 mil white", 42, 20244],
+                                "material2": ["2\" plates", 4, 396],
+                                "material3": ["4\" screws", 4, 572],
+                                "material4": ["4\" Drip Edge", 180, 3960],
+                                "material5": ["Cover strip", 20, 1080],
+                                "material6": ["Metal patches", 4, 132],
+                                "material7": ["3.25\" #12 screws", 6, 636],
+                                "material8": ["3\" insulation plates", 4, 340],
+                                "material9": ["2 Layers 1\" ISO", 1, 8387]
+                            }
+                        }
                     }
                 }
             },

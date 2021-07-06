@@ -4,9 +4,13 @@
 // Make the input default to zero if only a . is added.
 // Fix markup % saving the wrong value (ie. 200 is 200% but should be saved as 2)
 // Add comma formatting to make it easier to see magnitudes of numbers
+
+// Finish adding "default_values" list for the json formatting
 // Add a material condition to new inputs as well as the a json option for materials
 // Default materials should still be there for each individual project
 // Materials should default to zero, qty, name, and cost should all still be inputs
+// Materials may need information injected from another source so that users can choose from the current stock
+
 // Add cookies that will hold the data_sheet_variables_dict and use that if found
 // Test on different browsers
 // Separate add_dict_elements into smaller functions
@@ -737,6 +741,56 @@ function add_dict_elements(selector, dict) {
 
                         div.appendChild(output_label)
                         document.querySelector("#" + article_id).appendChild(div)
+                    }
+
+                    else if (dict[section][section_value]["display_values"][key]["user_interaction"] == "selectbox") {
+                        let select_box = document.createElement("select")
+                        select_box.id = key
+
+                        if ("options" in dict[section][section_value]["display_values"][key]) {
+                            for (let option_key in dict[section][section_value]["display_values"][key]["options"]) {
+                                let option_elem = document.createElement("option")
+                                option_elem.value = option_key
+                                option_elem.textContent = dict[section][section_value]["display_values"][key]["options"][option_key]
+                                select_box.appendChild(option_elem)
+                            }
+                        }
+                        
+                        div.appendChild(select_box)
+                        document.querySelector("#" + article_id).appendChild(div)
+
+                        add_query_on_input(select_box.id, "input", update_outputs)
+                    }
+                    
+                    else if (dict[section][section_value]["display_values"][key]["user_interaction"] == "material") {
+
+                        if ("default_values" in dict[section][section_value]["display_values"][key]) {
+                            for (key in dict[section][section_value]["display_values"][key]["default_values"]) {
+                                let label = document.createElement("label")
+                                label.for = newid
+                                label.id = newid + "_label"
+                                set_label_editable(label.id)
+                                
+                                let material_count = create_input(key, key, "text", 0, true, "int")
+                            }
+                        }
+
+                        // let select_box = document.createElement("select")
+                        // select_box.id = key
+
+                        // if ("options" in dict[section][section_value]["display_values"][key]) {
+                        //     for (let option_key in dict[section][section_value]["display_values"][key]["options"]) {
+                        //         let option_elem = document.createElement("option")
+                        //         option_elem.value = option_key
+                        //         option_elem.textContent = dict[section][section_value]["display_values"][key]["options"][option_key]
+                        //         select_box.appendChild(option_elem)
+                        //     }
+                        // }
+                        
+                        // div.appendChild(select_box)
+                        // document.querySelector("#" + article_id).appendChild(div)
+
+                        // add_query_on_input(select_box.id, "input", update_outputs)
                     }
 
                     else {
