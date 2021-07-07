@@ -5,8 +5,7 @@
 // Fix markup % saving the wrong value (ie. 200 is 200% but should be saved as 2)
 // Add comma formatting to make it easier to see magnitudes of numbers
 
-// Finish adding "default_values" list for the json formatting
-// Add a material condition to new inputs as well as the a json option for materials
+// Finish implementing materials getting displayed from json data, move currency label
 // Default materials should still be there for each individual project
 // Materials should default to zero, qty, name, and cost should all still be inputs
 // Materials may need information injected from another source so that users can choose from the current stock
@@ -316,42 +315,76 @@ function get_original_id(id) {
 }
 
 /**
- * Adds a new input onto the end of a selector, moving the button to the end of that section
- * @param {string} selector The selector to add the new input onto
- * @param {string} button_id The button id so that the new input div can be inserted before the button
+ * 
  */
-function add_input_div_from_button(selector, button_id) {
-
+function add_input_div(selector, new_id="", button_id="", user_interaction="", label_content="Misc", value=0, show_fixed_box=false, default_fixed_value=true, format="", allow_label_editing="", allow_removal="") {
     let section_id = get_source_id(selector)
     let subsection_id = get_original_id(selector)
 
-    let allow_label_editing = false
-    if ("allow_label_editing" in data_sheet_variables_dict[section_id][subsection_id]) {
-        if (data_sheet_variables_dict[section_id][subsection_id]["allow_label_editing"]) {
-            allow_label_editing = true
+    if (user_interaction == "") {
+        if ("user_interaction" in data_sheet_variables_dict[section_id][subsection_id]) {
+            user_interaction = data_sheet_variables_dict[section_id][subsection_id]["user_interaction"]
+        }
+        else {
+            user_interaction = ""
         }
     }
 
-    let allow_removal = false
+    if (allow_label_editing == "") {
+        if ("allow_label_editing" in data_sheet_variables_dict[section_id][subsection_id]) {
+            allow_label_editing = data_sheet_variables_dict[section_id][subsection_id]["allow_label_editing"]
+            if (typeof allow_label_editing != "boolean") {
+                if (allow_label_editing) {
+                    allow_label_editing = true
+                }
+                else {
+                    allow_label_editing = false
+                }
+            }
+        }
+        else {
+            allow_label_editing = false
+        }
+    }
 
-    if ("allow_removal" in data_sheet_variables_dict[section_id][subsection_id]) {
-        allow_removal = data_sheet_variables_dict[section_id][subsection_id]["allow_removal"]
-        if (typeof(allow_removal) != "boolean") {
-            if (allow_label_editing) {
-                allow_removal = true
+    if (allow_removal == "") {
+        if ("allow_removal" in data_sheet_variables_dict[section_id][subsection_id]) {
+            allow_removal = data_sheet_variables_dict[section_id][subsection_id]["allow_removal"]
+            if (typeof(allow_removal) != "boolean") {
+                if (allow_label_editing) {
+                    allow_removal = true
+                }
+                else {
+                    allow_removal = false
+                }
             }
-            else {
-                allow_removal = false
-            }
+        }
+        else {
+            allow_removal = false
         }
     }
     else if (allow_label_editing) {
         allow_removal = true
     }
 
+    if (format == "") {
+        if ("format" in data_sheet_variables_dict[section_id][subsection_id]) {
+            format = data_sheet_variables_dict[section_id][subsection_id]["format"]
+        }
+        else {
+            format = "float"
+        }
+    }
+
     let div = document.createElement("div")
 
-    let newid = "new_input_" + num_additional_inputs
+    let newid = ""
+    if (new_id != "") {
+        newid = new_id
+    }
+    else {
+        newid = "new_input_" + num_additional_inputs
+    }
 
     let label = document.createElement("label")
     label.for = newid
@@ -360,53 +393,129 @@ function add_input_div_from_button(selector, button_id) {
         label.id = newid + "_label"
     }
 
-    label.textContent = "Misc"
+    label.textContent = label_content
     div.appendChild(label)
 
-    let curr_label = create_currency_label()
-    div.appendChild(curr_label)
-
-    let input = create_input(newid)
-    div.appendChild(input)
-
-    additional_inputs.push(newid)
-    num_additional_inputs += 1
-    update_data_sheet_value(newid, 0, false, "", false)
-    // data_sheet_values[newid] = 0
-
-    section_values[section_id][subsection_id].push(newid)
-    data_sheet_variables_dict[section_id][subsection_id]["display_values"][newid] = {
-        "display_name": "Misc",
-        "show_fixed_box": true,
-        "default_fixed_value": false,
-        "user_interaction": "input"
-    }
-
-    add_fixed_box(newid, div, section_id, subsection_id, "Fixed:")
-
-    if (allow_removal) {
-        let button = create_removal_button(newid)
-        div.append(button)
-    }
-
-    document.querySelector("#" + selector).insertBefore(div, document.querySelector("#" + button_id))
-
-    if ("format" in data_sheet_variables_dict[section_id][subsection_id]["display_values"][newid]) {
-        if (data_sheet_variables_dict[section_id][subsection_id]["display_values"][newid]["format"] != "int") {
-            add_query_on_input(newid, "blur", set_event_target_currency)
+    if (user_interaction == "input" || user_interaction == "material") {
+        if (format == "float") {
+            let curr_label = create_currency_label()
+            div.appendChild(curr_label)
         }
     }
-    else {
-        add_query_on_input(newid, "blur", set_event_target_currency)
+
+    if (user_interaction != "output") {
+
+        if (user_interaction == "material") {
+            let input_count = create_input(newid + "_count", newid + "_count", "text", 0, true, "int")
+            div.appendChild(input_count)
+        }
+        
+        if (user_interaction == "input" || user_interaction == "material") {
+            let input = create_input(newid)
+            div.appendChild(input)
+        
+            if (new_id == "") {
+                additional_inputs.push(newid)
+                num_additional_inputs += 1
+            }
+            update_data_sheet_value(newid, value, false, "", false)
+        }
+    
+        section_values[section_id][subsection_id].push(newid)
+    
+        if (user_interaction == "input") {
+            data_sheet_variables_dict[section_id][subsection_id]["display_values"][newid] = {
+                "display_name": label_content,
+                "show_fixed_box": show_fixed_box,
+                "default_fixed_value": default_fixed_value,
+                "default_value": value,
+                "user_interaction": "input"
+            }
+        }
+        else if (user_interaction == "material") {
+            data_sheet_variables_dict[section_id][subsection_id]["display_values"][newid] = {
+                "display_name": label_content,
+                "user_interaction": "material"
+            }
+        }
+        
+        if (user_interaction == "selectbox") {
+            let select_box = document.createElement("select")
+            select_box.id = newid
+    
+            if ("options" in data_sheet_variables_dict[section_id][subsection_id]["display_values"][newid]) {
+                for (let option_key in data_sheet_variables_dict[section_id][subsection_id]["display_values"][newid]["options"]) {
+                    let option_elem = document.createElement("option")
+                    option_elem.value = option_key
+                    option_elem.textContent = data_sheet_variables_dict[section_id][subsection_id]["display_values"][newid]["options"][option_key]
+                    select_box.appendChild(option_elem)
+                }
+            }
+            
+            div.appendChild(select_box)
+            document.querySelector("#" + selector).appendChild(div)
+    
+            add_query_on_input(select_box.id, "input", update_outputs)
+        }
+
+        if (show_fixed_box) {
+            add_fixed_box(newid, div, section_id, subsection_id, "Fixed:")
+        }
+    
+        if (allow_removal) {
+            let button = create_removal_button(newid)
+            div.append(button)
+        }
+    
+        if (button_id != "") {
+            document.querySelector("#" + selector).insertBefore(div, document.querySelector("#" + button_id))
+        }
+        else {
+            document.querySelector("#" + selector).appendChild(div)
+        }
+        
+        if (user_interaction == "input" || user_interaction == "material") {
+            if (format != "int") {
+                add_query_on_input(newid, "blur", set_event_target_currency)
+            }
+            add_query_on_input(newid, "blur", update_outputs)
+            add_query_on_input(newid, "input", restrict_input)
+            add_query_on_input(newid, "focus", focus_input)
+        
+            if (user_interaction == "material") {
+                add_query_on_input(newid + "_count", "blur", update_outputs)
+                add_query_on_input(newid + "_count", "input", restrict_input)
+                add_query_on_input(newid + "_count", "focus", focus_input)
+            }
+        }
+    
+        if (show_fixed_box) {
+            add_query_on_change(newid + "_fixed", fixed_box_change)
+        }
     }
-    add_query_on_input(newid, "blur", update_outputs)
-    add_query_on_input(newid, "input", restrict_input)
-    add_query_on_input(newid, "focus", focus_input)
-    add_query_on_change(newid + "_fixed", fixed_box_change)
+    else if (user_interaction == "output") {
+        let output_label = document.createElement("label")
+            output_label.id = newid
+
+            div.appendChild(output_label)
+            document.querySelector("#" + selector).appendChild(div)
+    }
+    else {
+        document.querySelector("#" + selector).appendChild(div)
+    }
     
     if (allow_label_editing) {
         set_label_editable(newid + "_label", div)
     }
+}
+
+/**
+ * Adds a new input onto the end of a selector, moving the button to the end of that section
+ * @param {string} selector The selector to add the new input onto
+ * @param {string} button_id The button id so that the new input div can be inserted before the button
+ */
+function add_input_div_from_button(selector, button_id, show_fixed_box=false) {
+    add_input_div(selector, "", button_id, "", "Misc", 0, show_fixed_box)
 }
 
 /**
@@ -416,7 +525,20 @@ function add_input_div_from_button(selector, button_id) {
  */
 function add_new_elements_from_input_button(event) {
     let selector = event.path[1].id
-    add_input_div_from_button(selector, event.target.id)
+
+    let section_id = get_source_id(selector)
+    let subsection_id = get_original_id(selector)
+
+    let show_fixed_box = false
+    if ("user_interaction" in data_sheet_variables_dict[section_id][subsection_id]) {
+        let user_interaction = data_sheet_variables_dict[section_id][subsection_id]["user_interaction"]
+
+        if (user_interaction == "input") {
+            show_fixed_box = true
+        }
+    }
+
+    add_input_div_from_button(selector, event.target.id, show_fixed_box)
 
     // let button = document.querySelector("#" + event.path[0].id)
 
@@ -558,7 +680,6 @@ function add_dict_elements(selector, dict) {
 
         // Runs through each of the section values (ex. display_name, inputs, outputs)
         for (let section_value in dict[section]) {
-
             if (section_value == "display_name") {
                 // Creates a new element for the section name (ex. Monthly Overhead)
                 let section_header = document.createElement("h2")
@@ -575,12 +696,40 @@ function add_dict_elements(selector, dict) {
             }
 
             if (section_value != "display_name") {
+                
+                let user_interaction = "output"
+
+                if ("user_interaction" in dict[section][section_value]) {
+                    user_interaction = dict[section][section_value]["user_interaction"]
+                }
+
+
+                let show_fixed_box = false
+
+                if ("show_fixed_box" in dict[section][section_value]) {
+                    show_fixed_box = dict[section][section_value]["show_fixed_box"]
+                    if (typeof(show_fixed_box) != "boolean") {
+                        if (show_fixed_box) {
+                            show_fixed_box = true
+                        }
+                        else {
+                            show_fixed_box = false
+                        }
+                    }
+                }
+
+                let format = "float"
+
+                if ("format" in dict[section][section_value]) {
+                    format = dict[section][section_value]["format"]
+                }
 
                 let allow_label_editing = false
 
                 if ("allow_label_editing" in dict[section][section_value]) {
-                    if (dict[section][section_value]["allow_label_editing"]) {
-                        allow_label_editing = true
+                    allow_label_editing = dict[section][section_value]["allow_label_editing"]
+                    if (typeof allow_label_editing != "boolean") {
+                        allow_label_editing = false
                     }
                 }
 
@@ -624,6 +773,41 @@ function add_dict_elements(selector, dict) {
             
                 for (let key in dict[section][section_value]["display_values"]) {
 
+                    let user_interaction_temp = user_interaction
+                    if ("user_interaction" in dict[section][section_value]["display_values"][key]) {
+                        user_interaction_temp = dict[section][section_value]["display_values"][key]["user_interaction"]
+                    }
+
+
+                    let display_name = "Misc"
+                    if ("display_name" in dict[section][section_value]["display_values"][key]) {
+                        display_name = dict[section][section_value]["display_values"][key]["display_name"]
+                    }
+                    let value = 0
+                    if ("default_value" in dict[section][section_value]["display_values"][key]) {
+                        value = dict[section][section_value]["display_values"][key]["default_value"]
+                    }
+
+
+                    let show_fixed_box_temp = show_fixed_box
+                    if ("show_fixed_box" in dict[section][section_value]["display_values"][key]) {
+                        show_fixed_box_temp = dict[section][section_value]["display_values"][key]["show_fixed_box"]
+                        if (typeof show_fixed_box_temp != "boolean") {
+                            show_fixed_box_temp = show_fixed_box
+                        }
+                    }
+                    
+
+                    let default_fixed_value = false
+                    if ("default_fixed_value" in dict[section][section_value]["display_values"][key]) {
+                        default_fixed_value = dict[section][section_value]["display_values"][key]["default_fixed_value"]
+                    }
+
+                    let format_temp = format
+                    if ("format" in dict[section][section_value]["display_values"][key]) {
+                        format_temp = dict[section][section_value]["display_values"][key]["format"]
+                    }
+                    
                     let allow_label_editing_temp = allow_label_editing
                     if ("allow_label_editing" in dict[section][section_value]["display_values"][key]) {
                         allow_label_editing_temp = dict[section][section_value]["display_values"][key]["allow_label_editing"]
@@ -640,162 +824,175 @@ function add_dict_elements(selector, dict) {
                         }
                     }
 
-                    section_values[section][section_value].push(key)
+                    add_input_div(
+                        article_id, 
+                        key, 
+                        "",
+                        user_interaction_temp, 
+                        display_name, 
+                        value, 
+                        show_fixed_box_temp, 
+                        default_fixed_value, 
+                        format_temp, 
+                        allow_label_editing_temp, 
+                        allow_removal_temp)
 
-                    let div = document.createElement("div")
+                    // section_values[section][section_value].push(key)
 
-                    let label = document.createElement("label")
+                    // let div = document.createElement("div")
 
-                    if (allow_label_editing_temp) {
-                        label.id = key + "_label"
-                    }
+                    // let label = document.createElement("label")
 
-                    label.for = key
-                    label.textContent = dict[section][section_value]["display_values"][key]["display_name"]
-                    div.appendChild(label)
+                    // if (allow_label_editing_temp) {
+                    //     label.id = key + "_label"
+                    // }
 
-                    if (dict[section][section_value]["display_values"][key]["user_interaction"] == "input") {
-                        if ("default_value" in dict[section][section_value]["display_values"][key]){
-                            update_data_sheet_value(key, dict[section][section_value]["display_values"][key]["default_value"], false, "", false)
-                            // data_sheet_values[key] = dict[section][section_value]["display_values"][key]["default_value"]
-                        }
+                    // label.for = key
+                    // label.textContent = dict[section][section_value]["display_values"][key]["display_name"]
+                    // div.appendChild(label)
 
-                        else {
-                            update_data_sheet_value(key, 0, false, "", false)
-                            // data_sheet_values[key] = 0
-                        }
+                    // if (dict[section][section_value]["display_values"][key]["user_interaction"] == "input") {
+                    //     if ("default_value" in dict[section][section_value]["display_values"][key]){
+                    //         update_data_sheet_value(key, dict[section][section_value]["display_values"][key]["default_value"], false, "", false)
+                    //         // data_sheet_values[key] = dict[section][section_value]["display_values"][key]["default_value"]
+                    //     }
+
+                    //     else {
+                    //         update_data_sheet_value(key, 0, false, "", false)
+                    //         // data_sheet_values[key] = 0
+                    //     }
                         
-                        if ("format" in dict[section][section_value]["display_values"][key]) {
-                            let input
-                            let curr_label
-                            switch (dict[section][section_value]["display_values"][key]["format"]) {
-                                case "curr":
-                                    input = create_input(key, key, "text", data_sheet_values[key], true, "float")
-                                    curr_label = create_currency_label()
-                                    div.appendChild(curr_label)
-                                    div.appendChild(input)
-                                    break
+                    //     if ("format" in dict[section][section_value]["display_values"][key]) {
+                    //         let input
+                    //         let curr_label
+                    //         switch (dict[section][section_value]["display_values"][key]["format"]) {
+                    //             case "curr":
+                    //                 input = create_input(key, key, "text", data_sheet_values[key], true, "float")
+                    //                 curr_label = create_currency_label()
+                    //                 div.appendChild(curr_label)
+                    //                 div.appendChild(input)
+                    //                 break
 
-                                case "int":
-                                    input = create_input(key, key, "text", data_sheet_values[key], true, "int")
-                                    div.appendChild(input)
-                                    break
+                    //             case "int":
+                    //                 input = create_input(key, key, "text", data_sheet_values[key], true, "int")
+                    //                 div.appendChild(input)
+                    //                 break
 
-                                case "perc":
-                                    input = create_input(key, key, "text", data_sheet_values[key], true, "perc")
-                                    div.appendChild(input)
-                                    break
+                    //             case "perc":
+                    //                 input = create_input(key, key, "text", data_sheet_values[key], true, "perc")
+                    //                 div.appendChild(input)
+                    //                 break
 
-                                default:
-                                    input = create_input(key, key, "text", data_sheet_values[key], true, "float")
-                                    curr_label = create_currency_label()
-                                    div.appendChild(curr_label)
-                                    div.appendChild(input)
-                            }
-                        }
-                        else {
-                            let input = create_input(key, key, "text", data_sheet_values[key], true, "float")
-                            let curr_label = create_currency_label()
-                            div.appendChild(curr_label)
-                            div.appendChild(input)
-                        }
+                    //             default:
+                    //                 input = create_input(key, key, "text", data_sheet_values[key], true, "float")
+                    //                 curr_label = create_currency_label()
+                    //                 div.appendChild(curr_label)
+                    //                 div.appendChild(input)
+                    //         }
+                    //     }
+                    //     else {
+                    //         let input = create_input(key, key, "text", data_sheet_values[key], true, "float")
+                    //         let curr_label = create_currency_label()
+                    //         div.appendChild(curr_label)
+                    //         div.appendChild(input)
+                    //     }
                         
-                        if ("show_fixed_box" in dict[section][section_value]["display_values"][key]) {
-                            if (dict[section][section_value]["display_values"][key]["show_fixed_box"]) {
-                                add_fixed_box(key, div, section, section_value, "Fixed:")
-                            }
-                        }
+                    //     if ("show_fixed_box" in dict[section][section_value]["display_values"][key]) {
+                    //         if (dict[section][section_value]["display_values"][key]["show_fixed_box"]) {
+                    //             add_fixed_box(key, div, section, section_value, "Fixed:")
+                    //         }
+                    //     }
 
-                        if (allow_removal_temp) {
-                            let button = create_removal_button(key)
-                            div.append(button)
-                        }
+                    //     if (allow_removal_temp) {
+                    //         let button = create_removal_button(key)
+                    //         div.append(button)
+                    //     }
 
-                        document.querySelector("#" + article_id).appendChild(div)
+                    //     document.querySelector("#" + article_id).appendChild(div)
 
-                        // text input queries
-                        if ("format" in dict[section][section_value]["display_values"][key]) {
-                            let format = dict[section][section_value]["display_values"][key]["format"]
-                            add_query_on_input(key, "blur", set_event_target_currency, {"format": format})
-                        }
-                        else {
-                            add_query_on_input(key, "blur", set_event_target_currency)
-                        }
+                    //     // text input queries
+                    //     if ("format" in dict[section][section_value]["display_values"][key]) {
+                    //         let format = dict[section][section_value]["display_values"][key]["format"]
+                    //         add_query_on_input(key, "blur", set_event_target_currency, {"format": format})
+                    //     }
+                    //     else {
+                    //         add_query_on_input(key, "blur", set_event_target_currency)
+                    //     }
                         
-                        add_query_on_input(key, "blur", update_outputs)
-                        add_query_on_input(key, "input", restrict_input)
-                        add_query_on_input(key, "focus", focus_input)
+                    //     add_query_on_input(key, "blur", update_outputs)
+                    //     add_query_on_input(key, "input", restrict_input)
+                    //     add_query_on_input(key, "focus", focus_input)
 
-                        if ("default_fixed_value" in dict[section][section_value]["display_values"][key]) {
-                            add_query_on_change(key + "_fixed", fixed_box_change, dict)
-                        }
+                    //     if ("default_fixed_value" in dict[section][section_value]["display_values"][key]) {
+                    //         add_query_on_change(key + "_fixed", fixed_box_change, dict)
+                    //     }
 
-                        if (allow_label_editing_temp) {
-                            set_label_editable(key + "_label", div)
-                        }
-                    }
+                    //     if (allow_label_editing_temp) {
+                    //         set_label_editable(key + "_label", div)
+                    //     }
+                    // }
 
-                    else if (dict[section][section_value]["display_values"][key]["user_interaction"] == "output") {
-                        let output_label = document.createElement("label")
-                        output_label.id = key
+                    // else if (dict[section][section_value]["display_values"][key]["user_interaction"] == "output") {
+                    //     let output_label = document.createElement("label")
+                    //     output_label.id = key
 
-                        div.appendChild(output_label)
-                        document.querySelector("#" + article_id).appendChild(div)
-                    }
+                    //     div.appendChild(output_label)
+                    //     document.querySelector("#" + article_id).appendChild(div)
+                    // }
 
-                    else if (dict[section][section_value]["display_values"][key]["user_interaction"] == "selectbox") {
-                        let select_box = document.createElement("select")
-                        select_box.id = key
+                    // else if (dict[section][section_value]["display_values"][key]["user_interaction"] == "selectbox") {
+                    //     let select_box = document.createElement("select")
+                    //     select_box.id = key
 
-                        if ("options" in dict[section][section_value]["display_values"][key]) {
-                            for (let option_key in dict[section][section_value]["display_values"][key]["options"]) {
-                                let option_elem = document.createElement("option")
-                                option_elem.value = option_key
-                                option_elem.textContent = dict[section][section_value]["display_values"][key]["options"][option_key]
-                                select_box.appendChild(option_elem)
-                            }
-                        }
+                    //     if ("options" in dict[section][section_value]["display_values"][key]) {
+                    //         for (let option_key in dict[section][section_value]["display_values"][key]["options"]) {
+                    //             let option_elem = document.createElement("option")
+                    //             option_elem.value = option_key
+                    //             option_elem.textContent = dict[section][section_value]["display_values"][key]["options"][option_key]
+                    //             select_box.appendChild(option_elem)
+                    //         }
+                    //     }
                         
-                        div.appendChild(select_box)
-                        document.querySelector("#" + article_id).appendChild(div)
+                    //     div.appendChild(select_box)
+                    //     document.querySelector("#" + article_id).appendChild(div)
 
-                        add_query_on_input(select_box.id, "input", update_outputs)
-                    }
+                    //     add_query_on_input(select_box.id, "input", update_outputs)
+                    // }
                     
-                    else if (dict[section][section_value]["display_values"][key]["user_interaction"] == "material") {
+                    // else if (dict[section][section_value]["display_values"][key]["user_interaction"] == "material") {
 
-                        if ("default_values" in dict[section][section_value]["display_values"][key]) {
-                            for (key in dict[section][section_value]["display_values"][key]["default_values"]) {
-                                let label = document.createElement("label")
-                                label.for = newid
-                                label.id = newid + "_label"
-                                set_label_editable(label.id)
+                    //     if ("default_values" in dict[section][section_value]["display_values"][key]) {
+                    //         for (key in dict[section][section_value]["display_values"][key]["default_values"]) {
+                    //             let label = document.createElement("label")
+                    //             label.for = newid
+                    //             label.id = newid + "_label"
+                    //             set_label_editable(label.id)
                                 
-                                let material_count = create_input(key, key, "text", 0, true, "int")
-                            }
-                        }
+                    //             let material_count = create_input(key, key, "text", 0, true, "int")
+                    //         }
+                    //     }
 
-                        // let select_box = document.createElement("select")
-                        // select_box.id = key
+                    //     // let select_box = document.createElement("select")
+                    //     // select_box.id = key
 
-                        // if ("options" in dict[section][section_value]["display_values"][key]) {
-                        //     for (let option_key in dict[section][section_value]["display_values"][key]["options"]) {
-                        //         let option_elem = document.createElement("option")
-                        //         option_elem.value = option_key
-                        //         option_elem.textContent = dict[section][section_value]["display_values"][key]["options"][option_key]
-                        //         select_box.appendChild(option_elem)
-                        //     }
-                        // }
+                    //     // if ("options" in dict[section][section_value]["display_values"][key]) {
+                    //     //     for (let option_key in dict[section][section_value]["display_values"][key]["options"]) {
+                    //     //         let option_elem = document.createElement("option")
+                    //     //         option_elem.value = option_key
+                    //     //         option_elem.textContent = dict[section][section_value]["display_values"][key]["options"][option_key]
+                    //     //         select_box.appendChild(option_elem)
+                    //     //     }
+                    //     // }
                         
-                        // div.appendChild(select_box)
-                        // document.querySelector("#" + article_id).appendChild(div)
+                    //     // div.appendChild(select_box)
+                    //     // document.querySelector("#" + article_id).appendChild(div)
 
-                        // add_query_on_input(select_box.id, "input", update_outputs)
-                    }
+                    //     // add_query_on_input(select_box.id, "input", update_outputs)
+                    // }
 
-                    else {
-                        document.querySelector("#" + article_id).appendChild(div)
-                    }
+                    // else {
+                    //     document.querySelector("#" + article_id).appendChild(div)
+                    // }
                 }
                 if (allow_additional_input_values) {
                     let button = document.createElement("button")

@@ -8,6 +8,8 @@
                 "allow_removal": true,
                 "allow_label_editing": true,
                 "allow_reset": true,
+                "format": "float",
+                "user_interaction": "input",
                 "display_values": {
                     "rent": {
                         "display_name": "Rent",
@@ -18,80 +20,67 @@
                     },
                     "insurance": {
                         "display_name": "Business Insurance",
-                        "default_fixed_value": true,
-                        "user_interaction": "input"
+                        "default_fixed_value": true
                     },
                     "utilities": {
                         "display_name": "Utilities",
-                        "default_fixed_value": true,
-                        "user_interaction": "input"
+                        "default_fixed_value": true
                     },
                     "vehicle_payments": {
                         "display_name": "Vehicle Payments",
-                        "default_fixed_value": true,
-                        "user_interaction": "input"
+                        "default_fixed_value": true
                     },
                     "vehicle_insurance": {
                         "display_name": "Vehicle Insurance",
-                        "default_fixed_value": true,
-                        "user_interaction": "input"
+                        "default_fixed_value": true
                     },
                     "vehicle_maint_incl_fuel": {
                         "display_name": "Vehicle Maint/fuel",
-                        "default_fixed_value": false,
-                        "user_interaction": "input"
+                        "default_fixed_value": false
                     },
                     "hourly_admin_staff": {
                         "display_name": "Hourly Admin Staff",
-                        "default_fixed_value": false,
-                        "user_interaction": "input"
+                        "default_fixed_value": false
                     },
                     "office_supplies": {
                         "display_name": "Office Supplies",
-                        "default_fixed_value": false,
-                        "user_interaction": "input"
+                        "default_fixed_value": false
                     },
                     "internet_phones_cell": {
                         "display_name": "Internet/phones/cell",
                         "show_fixed_box": true,
-                        "default_fixed_value": true,
-                        "user_interaction": "input"
+                        "default_fixed_value": true
                     },
                     "marketing": {
                         "display_name": "Marketing",
-                        "default_fixed_value": false,
-                        "user_interaction": "input"
+                        "default_fixed_value": false
                     },
                     "tools": {
                         "display_name": "Tools",
-                        "default_fixed_value": false,
-                        "user_interaction": "input"
+                        "default_fixed_value": false
                     },
                     "uniforms": {
                         "display_name": "Uniforms",
-                        "default_fixed_value": false,
-                        "user_interaction": "input"
+                        "default_fixed_value": false
                     },
                     "benefits": {
                         "display_name": "Benefits",
-                        "default_fixed_value": true,
-                        "user_interaction": "input"
+                        "default_fixed_value": true
                     },
                     "property_taxes": {
                         "display_name": "Property Taxes",
-                        "default_fixed_value": true,
-                        "user_interaction": "input"
+                        "default_fixed_value": true
                     },
                     "owner_salary": {
                         "display_name": "Owner Salary @ $150k",
                         "show_fixed_box": true,
-                        "default_fixed_value": true,
-                        "user_interaction": "input"
+                        "default_fixed_value": true
                     }
                 }
             },
             "outputs": {
                 "display_name": "Outputs",
+                "user_interaction": "output",
                 "display_values": {
                     "est_monthly_expenses_fixed": {
                         "display_name": "Estimated Monthly Expenses Fixed",
@@ -394,10 +383,10 @@
                 "allow_additional_input_values": true,
                 "allow_removal": true,
                 "allow_label_editing": true,
+                "user_interaction": "material",
                 "display_values": {
                     "materials": {
                         "display_name": "Material",
-                        "user_interaction": "material",
                         "default_values": {
                             "small": {
                                 "material1": ["50 mil white", 9, 4338],
