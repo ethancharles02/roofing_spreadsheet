@@ -1,10 +1,14 @@
 // To-Do:
 // Fix Memory Leaks from reset buttons
 
+// Fix resetting causing currency tags to show up on non currency items
 // Make the input default to zero if only a . is added.
+// 0 in front of an int type restriction doesn't cut it down
 // Fix markup % saving the wrong value (ie. 200 is 200% but should be saved as 2)
 // Add comma formatting to make it easier to see magnitudes of numbers
 
+// Convert code that uses document.querySelector("#project_type").value to a global variable that gets updated when the project type is updated
+// Convert the code that checks if it is the materials_header to check for user_interaction being material
 // Finish implementing materials getting displayed from json data, move currency label
 // Default materials should still be there for each individual project
 // Materials should default to zero, qty, name, and cost should all still be inputs
@@ -24,8 +28,11 @@ var data_sheet_values = {}
 var section_values = {}
 var data_sheet_variables_dict_original = {}
 var data_sheet_variables_dict = {}
+
 var additional_inputs = []
 var num_additional_inputs = 0
+var additional_materials = []
+var num_additional_materials = 0
 
 /**
  * Adds a query to an input text box that will run the given function
@@ -116,7 +123,8 @@ function hide_label_input(event) {
 
     let section_id = get_source_id(event.originalEvent.path[2].id)
     let subsection_id = get_original_id(event.originalEvent.path[2].id)
-    data_sheet_variables_dict[section_id][subsection_id]["display_values"][get_source_id(label_id)]["display_name"] = new_value
+    update_display_name(get_source_id(label_id), new_value, section_id, subsection_id)
+    // data_sheet_variables_dict[section_id][subsection_id]["display_values"][get_source_id(label_id)]["display_name"] = new_value
 
     document.querySelector("#" + label_id).textContent = new_value
     document.querySelector("#" + label_id).style.display = "inline"
@@ -181,7 +189,90 @@ function update_data_sheet_value(id, new_value, update_display_value = false, di
     }
 
     if (update_dict) {
-        data_sheet_variables_dict[section_id][subsection_id]["display_values"][id]["default_value"] = new_value
+
+        let is_material = false
+        let material_update_index = 1
+        if (section_id == "materials_header") {
+            is_material = true
+            if (get_original_id(id) != "count") {
+                material_update_index = 2
+            }
+            else {
+                id = get_source_id(id)
+            }
+        }
+        if (is_material) {
+            data_sheet_variables_dict[section_id][subsection_id]["display_values"]["materials"]["default_values"][document.querySelector("#project_type").value][id][material_update_index] = new_value
+        }
+        else {
+            data_sheet_variables_dict[section_id][subsection_id]["display_values"][id]["default_value"] = new_value
+        }
+    }
+}
+
+function update_display_name(id, new_name, section_id = "", subsection_id = "") {
+    if (section_id == "materials_header") {
+        data_sheet_variables_dict[section_id][subsection_id]["display_values"]["materials"]["default_values"][document.querySelector("#project_type").value][id][0] = new_name
+    }
+    else {
+        data_sheet_variables_dict[section_id][subsection_id]["display_values"][id]["display_name"] = new_name
+    }
+}
+
+function update_materials(event) {
+    // let user_interaction_temp = event.data["user_interaction_temp"]
+    // let show_fixed_box_temp = event.data["show_fixed_box_temp"]
+    // let default_fixed_value = event.data["default_fixed_value"]
+    // let format_temp = event.data["format_temp"]
+    // let allow_label_editing_temp = event.data["allow_label_editing_temp"]
+    // let allow_removal_temp = event.data["allow_removal_temp"]
+    let user_interaction_temp = "material"
+    let show_fixed_box_temp = false
+    let default_fixed_value = false
+    let format_temp = "float"
+    let allow_label_editing_temp = true
+    let allow_removal_temp = true
+
+    let section = "materials_header"
+    let section_value = "inputs"
+
+    let article_id = section + "_" + section_value
+
+    let source_element = document.querySelector("#" + article_id)
+    let exempt_element_array = []
+    let first_child = source_element.firstChild
+    while (first_child) {
+        if (first_child.nodeName != "DIV") {
+            exempt_element_array.push(first_child)
+        }
+        source_element.removeChild(first_child)
+        first_child = source_element.firstChild
+    }
+
+    let material_object = data_sheet_variables_dict[section][section_value]["display_values"]["materials"]["default_values"][document.querySelector("#project_type").value]
+    for (let material in material_object) {
+
+        let material_name = material_object[material][0]
+        let material_count = material_object[material][1]
+        let material_value = material_object[material][2]
+
+        add_input_div(
+            article_id,
+            material,
+            "",
+            user_interaction_temp,
+            material_name,
+            material_value,
+            show_fixed_box_temp,
+            default_fixed_value,
+            format_temp,
+            allow_label_editing_temp,
+            allow_removal_temp,
+            material_count)
+    }
+
+    for (let element of exempt_element_array) {
+        document.querySelector("#" + article_id).appendChild(element)
     }
 }
 
@@ -197,7 +288,11 @@ function restrict_input(event) {
     let subsection_id = get_original_id(event.originalEvent.path[2].id)
 
     let format = "float"
-    if ("format" in data_sheet_variables_dict[section_id][subsection_id]["display_values"][target_id]) {
+
+    if (get_original_id(target_id) == "count" || section_id == "materials_header") {
+        format = "int"
+    }
+    else if ("format" in data_sheet_variables_dict[section_id][subsection_id]["display_values"][target_id]) {
         format = data_sheet_variables_dict[section_id][subsection_id]["display_values"][target_id]["format"]
         // if ( == "int") {
         //     is_int = true
@@ -317,7 +412,7 @@ function get_original_id(id) {
 /**
  * 
  */
-function add_input_div(selector, new_id="", button_id="", user_interaction="", label_content="Misc", value=0, show_fixed_box=false, default_fixed_value=true, format="", allow_label_editing="", allow_removal="") {
+function add_input_div(selector, new_id="", button_id="", user_interaction="", label_content="Misc", value=0, show_fixed_box=false, default_fixed_value=true, format="", allow_label_editing="", allow_removal="", material_count=0) {
     let section_id = get_source_id(selector)
     let subsection_id = get_original_id(selector)
 
@@ -396,33 +491,60 @@ function add_input_div(selector, new_id="", button_id="", user_interaction="", l
     label.textContent = label_content
     div.appendChild(label)
 
-    if (user_interaction == "input" || user_interaction == "material") {
-        if (format == "float") {
-            let curr_label = create_currency_label()
-            div.appendChild(curr_label)
-        }
-    }
+    // if (user_interaction == "input") {
+    //     if (format == "float") {
+    //         let curr_label = create_currency_label()
+    //         div.appendChild(curr_label)
+    //     }
+    // }
 
     if (user_interaction != "output") {
 
         if (user_interaction == "material") {
-            let input_count = create_input(newid + "_count", newid + "_count", "text", 0, true, "int")
+            let input_count = create_input(newid + "_count", newid + "_count", "text", material_count, true, "int")
             div.appendChild(input_count)
+
+            update_data_sheet_value(newid + "_count", material_count, false, "", false)
         }
         
         if (user_interaction == "input" || user_interaction == "material") {
-            let input = create_input(newid)
+
+            if (format == "float") {
+                let curr_label = create_currency_label()
+                div.appendChild(curr_label)
+            }
+
+            let input = create_input(newid, newid, "text", value, true, "float")
             div.appendChild(input)
-        
+
+
             if (new_id == "") {
                 additional_inputs.push(newid)
                 num_additional_inputs += 1
             }
             update_data_sheet_value(newid, value, false, "", false)
         }
-    
-        section_values[section_id][subsection_id].push(newid)
-    
+        
+        if (user_interaction == "material") {
+            let project_type = document.querySelector("#project_type").value
+            if (project_type in section_values[section_id][subsection_id]) {
+                if (!section_values[section_id][subsection_id][document.querySelector("#project_type").value].includes(newid)) {
+                    section_values[section_id][subsection_id][document.querySelector("#project_type").value].push(newid)
+                }
+            }
+            else {
+                section_values[section_id][subsection_id][project_type] = []
+                if (!section_values[section_id][subsection_id][document.querySelector("#project_type").value].includes(newid)) {
+                    section_values[section_id][subsection_id][document.querySelector("#project_type").value].push(newid)
+                }            
+            }
+        }
+        else {
+            if (!section_values[section_id][subsection_id].includes(newid)) {
+                section_values[section_id][subsection_id].push(newid)
+            }
+        }
+        
         if (user_interaction == "input") {
             data_sheet_variables_dict[section_id][subsection_id]["display_values"][newid] = {
                 "display_name": label_content,
@@ -433,10 +555,11 @@ function add_input_div(selector, new_id="", button_id="", user_interaction="", l
             }
         }
         else if (user_interaction == "material") {
-            data_sheet_variables_dict[section_id][subsection_id]["display_values"][newid] = {
-                "display_name": label_content,
-                "user_interaction": "material"
-            }
+            data_sheet_variables_dict[section_id][subsection_id]["display_values"]["materials"]["default_values"][document.querySelector("#project_type").value][newid] = [
+                label_content,
+                material_count,
+                value
+            ]
         }
         
         if (user_interaction == "selectbox") {
@@ -454,7 +577,17 @@ function add_input_div(selector, new_id="", button_id="", user_interaction="", l
             
             div.appendChild(select_box)
             document.querySelector("#" + selector).appendChild(div)
-    
+            
+            let data = {
+                "user_interaction_temp" : user_interaction,
+                "show_fixed_box_temp" : show_fixed_box,
+                "default_fixed_value" : default_fixed_value,
+                "format_temp" : format,
+                "allow_label_editing_temp" : allow_label_editing,
+                "allow_removal_temp" : allow_removal
+            }
+            
+            add_query_on_input(select_box.id, "input", update_materials, data)
             add_query_on_input(select_box.id, "input", update_outputs)
         }
 
@@ -514,8 +647,8 @@ function add_input_div(selector, new_id="", button_id="", user_interaction="", l
  * @param {string} selector The selector to add the new input onto
  * @param {string} button_id The button id so that the new input div can be inserted before the button
  */
-function add_input_div_from_button(selector, button_id, show_fixed_box=false) {
-    add_input_div(selector, "", button_id, "", "Misc", 0, show_fixed_box)
+function add_input_div_from_button(selector, button_id, default_display_name="Misc", show_fixed_box=false) {
+    add_input_div(selector, "", button_id, "", default_display_name, 0, show_fixed_box)
 }
 
 /**
@@ -530,15 +663,22 @@ function add_new_elements_from_input_button(event) {
     let subsection_id = get_original_id(selector)
 
     let show_fixed_box = false
+
+    let user_interaction = "input"
     if ("user_interaction" in data_sheet_variables_dict[section_id][subsection_id]) {
-        let user_interaction = data_sheet_variables_dict[section_id][subsection_id]["user_interaction"]
+        user_interaction = data_sheet_variables_dict[section_id][subsection_id]["user_interaction"]
 
         if (user_interaction == "input") {
             show_fixed_box = true
         }
     }
 
-    add_input_div_from_button(selector, event.target.id, show_fixed_box)
+    let display_name = "Misc"
+    if (user_interaction == "material") {
+        display_name = "Material"
+    }
+
+    add_input_div_from_button(selector, event.target.id, display_name, show_fixed_box)
 
     // let button = document.querySelector("#" + event.path[0].id)
 
@@ -777,9 +917,11 @@ function add_dict_elements(selector, dict) {
                     if ("user_interaction" in dict[section][section_value]["display_values"][key]) {
                         user_interaction_temp = dict[section][section_value]["display_values"][key]["user_interaction"]
                     }
-
-
+                    
                     let display_name = "Misc"
+                    // if (user_interaction == "material") {
+                    //     display_name = "Material"
+                    // }
                     if ("display_name" in dict[section][section_value]["display_values"][key]) {
                         display_name = dict[section][section_value]["display_values"][key]["display_name"]
                     }
@@ -823,19 +965,54 @@ function add_dict_elements(selector, dict) {
                             allow_removal_temp = allow_removal
                         }
                     }
+                    
+                    if (user_interaction_temp == "material") {
 
-                    add_input_div(
-                        article_id, 
-                        key, 
-                        "",
-                        user_interaction_temp, 
-                        display_name, 
-                        value, 
-                        show_fixed_box_temp, 
-                        default_fixed_value, 
-                        format_temp, 
-                        allow_label_editing_temp, 
-                        allow_removal_temp)
+                        let data = {data : {
+                            "user_interaction_temp" : user_interaction_temp,
+                            "show_fixed_box_temp" : show_fixed_box_temp,
+                            "default_fixed_value" : default_fixed_value,
+                            "format_temp" : format_temp,
+                            "allow_label_editing_temp" : allow_label_editing_temp,
+                            "allow_removal_temp" : allow_removal_temp
+                        }}
+
+                        update_materials(data)
+                        // for (let material in dict[section][section_value]["display_values"][key]["default_values"]["small"]) {
+                        //     let material_object = dict[section][section_value]["display_values"][key]["default_values"]["small"]
+                        //     let material_name = material_object[material][0]
+                        //     let material_count = material_object[material][1]
+                        //     let material_value = material_object[material][2]
+                        //     add_input_div(
+                        //         article_id,
+                        //         material,
+                        //         "",
+                        //         user_interaction_temp,
+                        //         material_name,
+                        //         material_value,
+                        //         show_fixed_box_temp,
+                        //         default_fixed_value,
+                        //         format_temp,
+                        //         allow_label_editing_temp,
+                        //         allow_removal_temp,
+                        //         material_count)
+                        // }
+                    }
+
+                    else {
+                        add_input_div(
+                            article_id, 
+                            key, 
+                            "",
+                            user_interaction_temp, 
+                            display_name, 
+                            value, 
+                            show_fixed_box_temp, 
+                            default_fixed_value, 
+                            format_temp, 
+                            allow_label_editing_temp, 
+                            allow_removal_temp)
+                    }
 
                     // section_values[section][section_value].push(key)
 
@@ -1031,7 +1208,8 @@ function update_outputs(event=[]) {
         update_labor_burden_outputs,
         update_ann_profit_owner_sal_outputs,
         update_annual_roofing_days_outputs,
-        update_daily_costs_outputs
+        update_daily_costs_outputs,
+        update_materials_outputs
     ]
     
     if ("data" in event) {
@@ -1157,6 +1335,15 @@ function update_daily_costs_outputs() {
 
     let daily_cost_total = daily_overhead_cost + daily_crew_labor_cost + daily_profit_target
     update_data_sheet_value("daily_cost_total", daily_cost_total, true, format_value(daily_cost_total, "curr"), false)
+}
+
+function update_materials_outputs() {
+    let material_cost_sum = 0
+    for (let key of section_values["materials_header"]["inputs"][document.querySelector("#project_type").value]) {
+        material_cost_sum += data_sheet_values[key]
+    }
+
+    update_data_sheet_value("total_materials_cost", material_cost_sum, true, format_value(material_cost_sum, "curr"), false)
 }
 
 function main() {
