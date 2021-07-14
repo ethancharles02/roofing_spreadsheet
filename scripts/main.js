@@ -1,26 +1,14 @@
 // To-Do:
 // Fix Memory Leaks from reset buttons
 
-// Fix resetting causing currency tags to show up on non currency items
-// Make the input default to zero if only a . is added.
-// 0 in front of an int type restriction doesn't cut it down
-// Fix markup % saving the wrong value (ie. 200 is 200% but should be saved as 2)
-// Add comma formatting to make it easier to see magnitudes of numbers
-
-// Convert code that uses document.querySelector("#project_type").value to a global variable that gets updated when the project type is updated
-// Convert the code that checks if it is the materials_header to check for user_interaction being material
-// Finish implementing materials getting displayed from json data, move currency label
-// Default materials should still be there for each individual project
-// Materials should default to zero, qty, name, and cost should all still be inputs
-// Materials may need information injected from another source so that users can choose from the current stock
-
 // Add cookies that will hold the data_sheet_variables_dict and use that if found
-// Test on different browsers
+// Test on different browsers (works on chrome and edge, mozilla firefox caused errors)
 // Separate add_dict_elements into smaller functions
 // Move removal button to a harder to click place or make a confirmation message
 // Make enter and the down/up arrow select input boxes below or above
+// Materials may need information injected from another source so that users can choose from the current stock
 
-// Default parameters won't work on internet explorer
+// Default parameters won't work on internet explorer (create message that shows up if someone is using internet explorer?)
 
 'use strict'
 
@@ -33,6 +21,11 @@ var additional_inputs = []
 var num_additional_inputs = 0
 var additional_materials = []
 var num_additional_materials = 0
+
+var project_type = "small"
+function update_project_type(event) {
+    project_type = event.target.value
+}
 
 /**
  * Adds a query to an input text box that will run the given function
@@ -54,6 +47,20 @@ function add_query_on_change(id, func) {
     jQuery("#" + id).change(func)
 }
 
+function get_user_interaction(section_id, subsection_id, default_interaction = "") {
+    let user_interaction = default_interaction
+    if ("user_interaction" in data_sheet_variables_dict[section_id][subsection_id]) {
+        user_interaction = data_sheet_variables_dict[section_id][subsection_id]["user_interaction"]
+    }
+
+    return user_interaction
+}
+
+// Function from Elias Zamaria, edited by T.J. Crowder
+function numberWithCommas(x) {
+    return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
 /**
  * Formats a given value into a currency format, the value is expected to already be a valid number (string or float)
  * @param {(string|float)} value The value to be formatted
@@ -67,23 +74,24 @@ function format_value(value, format="float") {
     //  float will return the value to two decimals
     //  perc is a percentage (ie. 0.5 goes to 50%, 50 goes to 50%)
     //      perc formatting is based on if the value is greater than 1, if it is, it will do that as the percentage, otherwise, it multiplies by 100 and makes that the percent
+
     switch (format) {
         case "curr":
-            return "$ " + parseFloat(value).toFixed(2)
+            return "$ " + numberWithCommas(parseFloat(value).toFixed(2))
         case "int":
-            return parseInt(value)
+            return numberWithCommas(parseInt(value))
         case "perc":
             let perc_value = parseFloat(value)
-            if (perc_value >= 1){
-                return perc_value + "%"
-            }
-            else {
-                return perc_value * 100 + "%"
-            }
+            // if (perc_value > 1){
+            //     return perc_value + "%"
+            // }
+            // else {
+            return numberWithCommas(perc_value * 100) + "%"
+            // }
         case "float":
-            return parseFloat(value).toFixed(2)
+            return numberWithCommas(parseFloat(value).toFixed(2))
         default:
-            return "$ " + parseFloat(value).toFixed(2)
+            return "$ " + numberWithCommas(parseFloat(value).toFixed(2))
     }
 }
 
@@ -93,6 +101,9 @@ function format_value(value, format="float") {
  */
 function set_event_target_currency(event) {
     let value = event.target.value
+    if (value == ".") {
+        value = 0
+    }
     // Checks if the string is a valid number
     if (jQuery.isNumeric(value)) {
         // Sets the value to the formatted version
@@ -100,11 +111,11 @@ function set_event_target_currency(event) {
         if (typeof event.data == "object") {
             if ("format" in event.data) {
                 format = true
-                event.target.value = format_value(event.target.value, event.data["format"])
+                event.target.value = format_value(value, event.data["format"])
             }
         }
         if(!format) {
-            event.target.value = format_value(event.target.value)
+            event.target.value = format_value(value)
         }
     }
 }
@@ -174,7 +185,7 @@ function set_label_editable(label_id, parent_container) {
  * @param {string} section_id section id in the dict (ie. monthly_overhead)
  * @param {string} subsection_id subsection id (ie. inputs)
  */
-function update_data_sheet_value(id, new_value, update_display_value = false, display_value = "", update_dict = true, section_id = "", subsection_id = "") {
+function update_data_sheet_value(id, new_value, update_display_value = false, display_value = "", update_dict = true, section_id = "", subsection_id = "", user_interaction = "") {
     data_sheet_values[id] = new_value
 
     if (update_display_value) {
@@ -192,7 +203,7 @@ function update_data_sheet_value(id, new_value, update_display_value = false, di
 
         let is_material = false
         let material_update_index = 1
-        if (section_id == "materials_header") {
+        if (user_interaction == "material") {
             is_material = true
             if (get_original_id(id) != "count") {
                 material_update_index = 2
@@ -202,7 +213,7 @@ function update_data_sheet_value(id, new_value, update_display_value = false, di
             }
         }
         if (is_material) {
-            data_sheet_variables_dict[section_id][subsection_id]["display_values"]["materials"]["default_values"][document.querySelector("#project_type").value][id][material_update_index] = new_value
+            data_sheet_variables_dict[section_id][subsection_id]["display_values"]["materials"]["default_values"][project_type][id][material_update_index] = new_value
         }
         else {
             data_sheet_variables_dict[section_id][subsection_id]["display_values"][id]["default_value"] = new_value
@@ -210,9 +221,9 @@ function update_data_sheet_value(id, new_value, update_display_value = false, di
     }
 }
 
-function update_display_name(id, new_name, section_id = "", subsection_id = "") {
-    if (section_id == "materials_header") {
-        data_sheet_variables_dict[section_id][subsection_id]["display_values"]["materials"]["default_values"][document.querySelector("#project_type").value][id][0] = new_name
+function update_display_name(id, new_name, section_id = "", subsection_id = "", user_interaction = "") {
+    if (user_interaction == "material") {
+        data_sheet_variables_dict[section_id][subsection_id]["display_values"]["materials"]["default_values"][project_type][id][0] = new_name
     }
     else {
         data_sheet_variables_dict[section_id][subsection_id]["display_values"][id]["display_name"] = new_name
@@ -249,7 +260,7 @@ function update_materials(event) {
         first_child = source_element.firstChild
     }
 
-    let material_object = data_sheet_variables_dict[section][section_value]["display_values"]["materials"]["default_values"][document.querySelector("#project_type").value]
+    let material_object = data_sheet_variables_dict[section][section_value]["display_values"]["materials"]["default_values"][project_type]
     for (let material in material_object) {
 
         let material_name = material_object[material][0]
@@ -287,6 +298,11 @@ function restrict_input(event) {
     let section_id = get_source_id(event.originalEvent.path[2].id)
     let subsection_id = get_original_id(event.originalEvent.path[2].id)
 
+    let user_interaction = get_user_interaction(section_id, subsection_id)
+    // if ("user_interaction" in data_sheet_variables_dict[section_id][subsection_id]) {
+    //     user_interaction = data_sheet_variables_dict[section_id][subsection_id]["user_interaction"]
+    // }
+
     let format = "float"
 
     if (get_original_id(target_id) == "count" || section_id == "materials_header") {
@@ -309,23 +325,26 @@ function restrict_input(event) {
     // If the value is an int, it is simply stored as is
     else {
         if (value.includes(".")) {
+            if (value == ".") {
+                value = "0."
+            }
             if (format == "int") {
                 event.target.value = data_sheet_values[target_id]
             }
             else if (format == "perc") {
-                update_data_sheet_value(target_id, parseFloat(value), false, "", true, section_id, subsection_id)
+                update_data_sheet_value(target_id, parseFloat(value), false, "", true, section_id, subsection_id, user_interaction)
             }
             else {
-                update_data_sheet_value(target_id, parseFloat(value).toFixed(2), false, "", true, section_id, subsection_id)
+                update_data_sheet_value(target_id, parseFloat(value).toFixed(2), false, "", true, section_id, subsection_id, user_interaction)
             }
             // data_sheet_values[target_id] = parseFloat(value).toFixed(2)
         }
         else if(value == "") {
-            update_data_sheet_value(target_id, 0, false, "", true, section_id, subsection_id)
+            update_data_sheet_value(target_id, 0, false, "", true, section_id, subsection_id, user_interaction)
             // data_sheet_values[target_id] = value
         }
         else {
-            update_data_sheet_value(target_id, parseInt(value), false, "", true, section_id, subsection_id)
+            update_data_sheet_value(target_id, parseInt(value), false, "", true, section_id, subsection_id, user_interaction)
             // data_sheet_values[target_id] = parseFloat(value)
         }
     }
@@ -417,12 +436,7 @@ function add_input_div(selector, new_id="", button_id="", user_interaction="", l
     let subsection_id = get_original_id(selector)
 
     if (user_interaction == "") {
-        if ("user_interaction" in data_sheet_variables_dict[section_id][subsection_id]) {
-            user_interaction = data_sheet_variables_dict[section_id][subsection_id]["user_interaction"]
-        }
-        else {
-            user_interaction = ""
-        }
+        user_interaction = get_user_interaction(section_id, subsection_id)
     }
 
     if (allow_label_editing == "") {
@@ -514,7 +528,7 @@ function add_input_div(selector, new_id="", button_id="", user_interaction="", l
                 div.appendChild(curr_label)
             }
 
-            let input = create_input(newid, newid, "text", value, true, "float")
+            let input = create_input(newid, newid, "text", value, true, format)
             div.appendChild(input)
 
 
@@ -526,16 +540,15 @@ function add_input_div(selector, new_id="", button_id="", user_interaction="", l
         }
         
         if (user_interaction == "material") {
-            let project_type = document.querySelector("#project_type").value
             if (project_type in section_values[section_id][subsection_id]) {
-                if (!section_values[section_id][subsection_id][document.querySelector("#project_type").value].includes(newid)) {
-                    section_values[section_id][subsection_id][document.querySelector("#project_type").value].push(newid)
+                if (!section_values[section_id][subsection_id][project_type].includes(newid)) {
+                    section_values[section_id][subsection_id][project_type].push(newid)
                 }
             }
             else {
                 section_values[section_id][subsection_id][project_type] = []
-                if (!section_values[section_id][subsection_id][document.querySelector("#project_type").value].includes(newid)) {
-                    section_values[section_id][subsection_id][document.querySelector("#project_type").value].push(newid)
+                if (!section_values[section_id][subsection_id][project_type].includes(newid)) {
+                    section_values[section_id][subsection_id][project_type].push(newid)
                 }            
             }
         }
@@ -551,11 +564,12 @@ function add_input_div(selector, new_id="", button_id="", user_interaction="", l
                 "show_fixed_box": show_fixed_box,
                 "default_fixed_value": default_fixed_value,
                 "default_value": value,
-                "user_interaction": "input"
+                "user_interaction": "input",
+                "format": format
             }
         }
         else if (user_interaction == "material") {
-            data_sheet_variables_dict[section_id][subsection_id]["display_values"]["materials"]["default_values"][document.querySelector("#project_type").value][newid] = [
+            data_sheet_variables_dict[section_id][subsection_id]["display_values"]["materials"]["default_values"][project_type][newid] = [
                 label_content,
                 material_count,
                 value
@@ -587,6 +601,7 @@ function add_input_div(selector, new_id="", button_id="", user_interaction="", l
                 "allow_removal_temp" : allow_removal
             }
             
+            add_query_on_input(select_box.id, "input", update_project_type)
             add_query_on_input(select_box.id, "input", update_materials, data)
             add_query_on_input(select_box.id, "input", update_outputs)
         }
@@ -608,14 +623,13 @@ function add_input_div(selector, new_id="", button_id="", user_interaction="", l
         }
         
         if (user_interaction == "input" || user_interaction == "material") {
-            if (format != "int") {
-                add_query_on_input(newid, "blur", set_event_target_currency)
-            }
+            add_query_on_input(newid, "blur", set_event_target_currency, {"format" : format})
             add_query_on_input(newid, "blur", update_outputs)
             add_query_on_input(newid, "input", restrict_input)
             add_query_on_input(newid, "focus", focus_input)
         
             if (user_interaction == "material") {
+                add_query_on_input(newid + "_count", "blur", set_event_target_currency, {"format" : "int"})
                 add_query_on_input(newid + "_count", "blur", update_outputs)
                 add_query_on_input(newid + "_count", "input", restrict_input)
                 add_query_on_input(newid + "_count", "focus", focus_input)
@@ -664,13 +678,10 @@ function add_new_elements_from_input_button(event) {
 
     let show_fixed_box = false
 
-    let user_interaction = "input"
-    if ("user_interaction" in data_sheet_variables_dict[section_id][subsection_id]) {
-        user_interaction = data_sheet_variables_dict[section_id][subsection_id]["user_interaction"]
+    let user_interaction = get_user_interaction(section_id, subsection_id, "input")
 
-        if (user_interaction == "input") {
-            show_fixed_box = true
-        }
+    if (user_interaction == "input") {
+        show_fixed_box = true
     }
 
     let display_name = "Misc"
@@ -793,12 +804,33 @@ function remove_elements(event) {
     let section_id = get_source_id(event.path[2].id)
     let subsection_id = get_original_id(event.path[2].id)
 
+    let user_interaction = get_user_interaction(section_id, subsection_id)
+
     // Deletes the information from the corresponding global variables
-    delete data_sheet_values[source_id]
-    section_values[section_id][subsection_id].splice(section_values[section_id][subsection_id].indexOf(source_id), 1)
-    delete data_sheet_variables_dict[section_id][subsection_id]["display_values"][source_id]
-    if (additional_inputs.includes(source_id)) {
-        additional_inputs.splice(additional_inputs.indexOf(source_id), 1)
+    if (user_interaction == "material") {
+        let project_type = project_type
+
+        delete data_sheet_values[source_id]
+        delete data_sheet_values[source_id + "_count"]
+        
+        section_values[section_id][subsection_id][project_type].splice(section_values[section_id][subsection_id][project_type].indexOf(source_id), 1)
+        
+        delete data_sheet_variables_dict[section_id][subsection_id]["display_values"]["materials"]["default_values"][project_type][source_id]
+        
+        if (additional_inputs.includes(source_id)) {
+            additional_inputs.splice(additional_inputs.indexOf(source_id), 1)
+        }
+        if (additional_inputs.includes(source_id + "_count")) {
+            additional_inputs.splice(additional_inputs.indexOf(source_id + "_count"), 1)
+        }
+    }
+    else {
+        delete data_sheet_values[source_id]
+        section_values[section_id][subsection_id].splice(section_values[section_id][subsection_id].indexOf(source_id), 1)
+        delete data_sheet_variables_dict[section_id][subsection_id]["display_values"][source_id]
+        if (additional_inputs.includes(source_id)) {
+            additional_inputs.splice(additional_inputs.indexOf(source_id), 1)
+        }
     }
 
     // Updates outputs
@@ -837,12 +869,7 @@ function add_dict_elements(selector, dict) {
 
             if (section_value != "display_name") {
                 
-                let user_interaction = "output"
-
-                if ("user_interaction" in dict[section][section_value]) {
-                    user_interaction = dict[section][section_value]["user_interaction"]
-                }
-
+                let user_interaction = get_user_interaction(section, section_value, "output")
 
                 let show_fixed_box = false
 
@@ -1013,163 +1040,6 @@ function add_dict_elements(selector, dict) {
                             allow_label_editing_temp, 
                             allow_removal_temp)
                     }
-
-                    // section_values[section][section_value].push(key)
-
-                    // let div = document.createElement("div")
-
-                    // let label = document.createElement("label")
-
-                    // if (allow_label_editing_temp) {
-                    //     label.id = key + "_label"
-                    // }
-
-                    // label.for = key
-                    // label.textContent = dict[section][section_value]["display_values"][key]["display_name"]
-                    // div.appendChild(label)
-
-                    // if (dict[section][section_value]["display_values"][key]["user_interaction"] == "input") {
-                    //     if ("default_value" in dict[section][section_value]["display_values"][key]){
-                    //         update_data_sheet_value(key, dict[section][section_value]["display_values"][key]["default_value"], false, "", false)
-                    //         // data_sheet_values[key] = dict[section][section_value]["display_values"][key]["default_value"]
-                    //     }
-
-                    //     else {
-                    //         update_data_sheet_value(key, 0, false, "", false)
-                    //         // data_sheet_values[key] = 0
-                    //     }
-                        
-                    //     if ("format" in dict[section][section_value]["display_values"][key]) {
-                    //         let input
-                    //         let curr_label
-                    //         switch (dict[section][section_value]["display_values"][key]["format"]) {
-                    //             case "curr":
-                    //                 input = create_input(key, key, "text", data_sheet_values[key], true, "float")
-                    //                 curr_label = create_currency_label()
-                    //                 div.appendChild(curr_label)
-                    //                 div.appendChild(input)
-                    //                 break
-
-                    //             case "int":
-                    //                 input = create_input(key, key, "text", data_sheet_values[key], true, "int")
-                    //                 div.appendChild(input)
-                    //                 break
-
-                    //             case "perc":
-                    //                 input = create_input(key, key, "text", data_sheet_values[key], true, "perc")
-                    //                 div.appendChild(input)
-                    //                 break
-
-                    //             default:
-                    //                 input = create_input(key, key, "text", data_sheet_values[key], true, "float")
-                    //                 curr_label = create_currency_label()
-                    //                 div.appendChild(curr_label)
-                    //                 div.appendChild(input)
-                    //         }
-                    //     }
-                    //     else {
-                    //         let input = create_input(key, key, "text", data_sheet_values[key], true, "float")
-                    //         let curr_label = create_currency_label()
-                    //         div.appendChild(curr_label)
-                    //         div.appendChild(input)
-                    //     }
-                        
-                    //     if ("show_fixed_box" in dict[section][section_value]["display_values"][key]) {
-                    //         if (dict[section][section_value]["display_values"][key]["show_fixed_box"]) {
-                    //             add_fixed_box(key, div, section, section_value, "Fixed:")
-                    //         }
-                    //     }
-
-                    //     if (allow_removal_temp) {
-                    //         let button = create_removal_button(key)
-                    //         div.append(button)
-                    //     }
-
-                    //     document.querySelector("#" + article_id).appendChild(div)
-
-                    //     // text input queries
-                    //     if ("format" in dict[section][section_value]["display_values"][key]) {
-                    //         let format = dict[section][section_value]["display_values"][key]["format"]
-                    //         add_query_on_input(key, "blur", set_event_target_currency, {"format": format})
-                    //     }
-                    //     else {
-                    //         add_query_on_input(key, "blur", set_event_target_currency)
-                    //     }
-                        
-                    //     add_query_on_input(key, "blur", update_outputs)
-                    //     add_query_on_input(key, "input", restrict_input)
-                    //     add_query_on_input(key, "focus", focus_input)
-
-                    //     if ("default_fixed_value" in dict[section][section_value]["display_values"][key]) {
-                    //         add_query_on_change(key + "_fixed", fixed_box_change, dict)
-                    //     }
-
-                    //     if (allow_label_editing_temp) {
-                    //         set_label_editable(key + "_label", div)
-                    //     }
-                    // }
-
-                    // else if (dict[section][section_value]["display_values"][key]["user_interaction"] == "output") {
-                    //     let output_label = document.createElement("label")
-                    //     output_label.id = key
-
-                    //     div.appendChild(output_label)
-                    //     document.querySelector("#" + article_id).appendChild(div)
-                    // }
-
-                    // else if (dict[section][section_value]["display_values"][key]["user_interaction"] == "selectbox") {
-                    //     let select_box = document.createElement("select")
-                    //     select_box.id = key
-
-                    //     if ("options" in dict[section][section_value]["display_values"][key]) {
-                    //         for (let option_key in dict[section][section_value]["display_values"][key]["options"]) {
-                    //             let option_elem = document.createElement("option")
-                    //             option_elem.value = option_key
-                    //             option_elem.textContent = dict[section][section_value]["display_values"][key]["options"][option_key]
-                    //             select_box.appendChild(option_elem)
-                    //         }
-                    //     }
-                        
-                    //     div.appendChild(select_box)
-                    //     document.querySelector("#" + article_id).appendChild(div)
-
-                    //     add_query_on_input(select_box.id, "input", update_outputs)
-                    // }
-                    
-                    // else if (dict[section][section_value]["display_values"][key]["user_interaction"] == "material") {
-
-                    //     if ("default_values" in dict[section][section_value]["display_values"][key]) {
-                    //         for (key in dict[section][section_value]["display_values"][key]["default_values"]) {
-                    //             let label = document.createElement("label")
-                    //             label.for = newid
-                    //             label.id = newid + "_label"
-                    //             set_label_editable(label.id)
-                                
-                    //             let material_count = create_input(key, key, "text", 0, true, "int")
-                    //         }
-                    //     }
-
-                    //     // let select_box = document.createElement("select")
-                    //     // select_box.id = key
-
-                    //     // if ("options" in dict[section][section_value]["display_values"][key]) {
-                    //     //     for (let option_key in dict[section][section_value]["display_values"][key]["options"]) {
-                    //     //         let option_elem = document.createElement("option")
-                    //     //         option_elem.value = option_key
-                    //     //         option_elem.textContent = dict[section][section_value]["display_values"][key]["options"][option_key]
-                    //     //         select_box.appendChild(option_elem)
-                    //     //     }
-                    //     // }
-                        
-                    //     // div.appendChild(select_box)
-                    //     // document.querySelector("#" + article_id).appendChild(div)
-
-                    //     // add_query_on_input(select_box.id, "input", update_outputs)
-                    // }
-
-                    // else {
-                    //     document.querySelector("#" + article_id).appendChild(div)
-                    // }
                 }
                 if (allow_additional_input_values) {
                     let button = document.createElement("button")
@@ -1185,14 +1055,6 @@ function add_dict_elements(selector, dict) {
                 if (allow_reset) {
                     let button = create_reset_button(section + "_" + section_value, "Reset Section to Default")
                     document.querySelector("#" + section + "_" + section_value).appendChild(button)
-                    // let button = document.createElement("button")
-                    // button.type = "button"
-                    // button.textContent = "New Input"
-                    // button.id = section + "_" + section_value + "_button"
-                    // button.style.width = "100px"
-                    // button.onclick = add_new_elements_from_input_button
-    
-                    // document.querySelector("#" + section + "_" + section_value).appendChild(button)
                 }
             }
         }
@@ -1209,7 +1071,11 @@ function update_outputs(event=[]) {
         update_ann_profit_owner_sal_outputs,
         update_annual_roofing_days_outputs,
         update_daily_costs_outputs,
-        update_materials_outputs
+        update_labor_costs_outputs,
+        update_materials_outputs,
+        update_bid_percentage_markup_outputs,
+        update_materials_labor_outputs,
+        update_savage_estimating_outputs
     ]
     
     if ("data" in event) {
@@ -1337,13 +1203,150 @@ function update_daily_costs_outputs() {
     update_data_sheet_value("daily_cost_total", daily_cost_total, true, format_value(daily_cost_total, "curr"), false)
 }
 
+function update_labor_costs_outputs() {
+    let total_labor_cost = data_sheet_values["total_days"] * data_sheet_values["daily_crew_labor_cost"]
+    update_data_sheet_value("total_labor_cost", total_labor_cost, true, format_value(total_labor_cost, "float"), false)
+}
+
 function update_materials_outputs() {
     let material_cost_sum = 0
-    for (let key of section_values["materials_header"]["inputs"][document.querySelector("#project_type").value]) {
+    for (let key of section_values["materials_header"]["inputs"][project_type]) {
         material_cost_sum += data_sheet_values[key]
     }
 
     update_data_sheet_value("total_materials_cost", material_cost_sum, true, format_value(material_cost_sum, "curr"), false)
+}
+
+function update_bid_percentage_markup_outputs() {
+
+    let markup_cost = (data_sheet_values["total_materials_cost"] + data_sheet_values["total_labor_cost"]) * data_sheet_values["markup_perc"]
+    update_data_sheet_value("markup_cost", markup_cost, true, format_value(markup_cost, "curr"), false)
+    
+    let material_labor_cost = data_sheet_values["total_labor_cost"] + data_sheet_values["total_materials_cost"]
+    update_data_sheet_value("material_labor_cost", material_labor_cost, true, format_value(material_labor_cost, "curr"), false)
+
+    let total_price_1 = data_sheet_values["markup_cost"] + data_sheet_values["total_labor_cost"] + data_sheet_values["total_materials_cost"]
+    update_data_sheet_value("total_price_1", total_price_1, true, format_value(total_price_1, "curr"), false)
+
+    let minus_overhead = 0
+    if (project_type == "small" || project_type == "small_2") {
+        minus_overhead = (data_sheet_values["daily_overhead_cost"] + data_sheet_values["daily_profit_target"]) * data_sheet_values["total_days"]
+    }
+    else {
+        minus_overhead = data_sheet_values["daily_overhead_cost"] * data_sheet_values["total_days"]
+    }
+    update_data_sheet_value("minus_overhead", minus_overhead, true, format_value(minus_overhead, "curr"), false)
+
+    let total_materials_cost_display = data_sheet_values["total_materials_cost"]
+    update_data_sheet_value("total_materials_cost_display", total_materials_cost_display, true, format_value(total_materials_cost_display, "curr"), false)
+
+    let total_labor_cost_display = data_sheet_values["total_labor_cost"]
+    update_data_sheet_value("total_labor_cost_display", total_labor_cost_display, true, format_value(total_labor_cost_display, "curr"), false)
+
+    let total_profit_1 = data_sheet_values["total_price_1"] - data_sheet_values["minus_overhead"] - data_sheet_values["total_materials_cost"] - data_sheet_values["total_labor_cost"]
+    update_data_sheet_value("total_profit_1", total_profit_1, true, format_value(total_profit_1, "curr"), false)
+
+    let daily_profit_1 = 0
+    if (data_sheet_values["total_days"] != 0) {
+        daily_profit_1 = data_sheet_values["total_profit_1"] / data_sheet_values["total_days"]
+    }
+    update_data_sheet_value("daily_profit_1", daily_profit_1, true, format_value(daily_profit_1, "curr"), false)
+
+    let difference_daily_profit_goal_1 = data_sheet_values["daily_profit_1"] - data_sheet_values["daily_profit_target"]
+    update_data_sheet_value("difference_daily_profit_goal_1", difference_daily_profit_goal_1, true, format_value(difference_daily_profit_goal_1, "curr"), false)
+
+}
+
+function update_materials_labor_outputs() {
+    
+    let material_x2 = data_sheet_values["total_materials_cost"] * 2
+    update_data_sheet_value("material_x2", material_x2, true, format_value(material_x2, "curr"), false)
+    
+    let new_material = data_sheet_values["material_x2"] * 0.014
+    update_data_sheet_value("new_material", new_material, true, format_value(new_material, "curr"), false)
+
+    let total_price_2 = data_sheet_values["new_material"] + data_sheet_values["material_x2"]
+    update_data_sheet_value("total_price_2", total_price_2, true, format_value(total_price_2, "curr"), false)
+
+    let minus_overhead_display = data_sheet_values["minus_overhead"]
+    update_data_sheet_value("minus_overhead_display", minus_overhead_display, true, format_value(minus_overhead_display, "curr"), false)
+
+    let total_materials_cost_display_2 = data_sheet_values["total_materials_cost"]
+    update_data_sheet_value("total_materials_cost_display_2", total_materials_cost_display_2, true, format_value(total_materials_cost_display_2, "curr"), false)
+
+    let total_labor_cost_display_2 = data_sheet_values["total_labor_cost"]
+    update_data_sheet_value("total_labor_cost_display_2", total_labor_cost_display_2, true, format_value(total_labor_cost_display_2, "curr"), false)
+
+    let total_profit_2 = data_sheet_values["total_price_2"] - data_sheet_values["minus_overhead"] - data_sheet_values["total_materials_cost"] - data_sheet_values["total_labor_cost"]
+    update_data_sheet_value("total_profit_2", total_profit_2, true, format_value(total_profit_2, "curr"), false)
+
+    let daily_profit_2 = 0
+    if (data_sheet_values["total_days"] != 0) {
+        daily_profit_2 = data_sheet_values["total_profit_2"] / data_sheet_values["total_days"]
+    }
+    update_data_sheet_value("daily_profit_2", daily_profit_2, true, format_value(daily_profit_2, "curr"), false)
+
+    let difference_daily_profit_goal_2 = data_sheet_values["daily_profit_2"] - data_sheet_values["daily_profit_target"]
+    update_data_sheet_value("difference_daily_profit_goal_2", difference_daily_profit_goal_2, true, format_value(difference_daily_profit_goal_2, "curr"), false)
+
+}
+
+function update_savage_estimating_outputs() {
+
+    let daily_work_cost = 0
+    if (project_type == "small" || project_type == "large") {
+        daily_work_cost = data_sheet_values["total_days"] * data_sheet_values["daily_cost_total"]
+    }
+    else {
+        daily_work_cost = (((data_sheet_values["daily_overhead_cost"] + data_sheet_values["daily_profit_target"]) / 2) + data_sheet_values["daily_crew_labor_cost"]) * data_sheet_values["total_days"]
+    }
+    update_data_sheet_value("daily_work_cost", daily_work_cost, true, format_value(daily_work_cost, "curr"), false)
+    
+    let total_materials_cost_display_3 = data_sheet_values["total_materials_cost"]
+    update_data_sheet_value("total_materials_cost_display_3", total_materials_cost_display_3, true, format_value(total_materials_cost_display_3, "curr"), false)
+
+    let total_price = data_sheet_values["daily_work_cost"] + data_sheet_values["total_materials_cost"]
+    update_data_sheet_value("total_price", total_price, true, format_value(total_price, "curr"), false)
+
+    let minus_overhead_display_2 = 0
+    if (project_type == "small" || project_type == "large") {
+        minus_overhead_display_2 = data_sheet_values["minus_overhead"]
+    }
+    else if (project_type == "small_2") {
+        minus_overhead_display_2 = ((data_sheet_values["daily_overhead_cost"] + data_sheet_values["daily_profit_target"]) / 2) * data_sheet_values["total_days"]
+    }
+    else {
+        minus_overhead_display_2 = data_sheet_values["minus_overhead"] / 2
+    }
+    update_data_sheet_value("minus_overhead_display_2", minus_overhead_display_2, true, format_value(minus_overhead_display_2, "curr"), false)
+
+    let total_materials_cost_display_4 = data_sheet_values["total_materials_cost"]
+    update_data_sheet_value("total_materials_cost_display_4", total_materials_cost_display_4, true, format_value(total_materials_cost_display_4, "curr"), false)
+
+    let total_labor_cost_display_3 = data_sheet_values["total_labor_cost"]
+    update_data_sheet_value("total_labor_cost_display_3", total_labor_cost_display_3, true, format_value(total_labor_cost_display_3, "curr"), false)
+
+    let total_profit = 0
+    if (project_type == "large_2") {
+        total_profit = data_sheet_values["total_days"] * (data_sheet_values["daily_profit_target"] / 2)
+    }
+    else {
+        total_profit = data_sheet_values["total_days"] * data_sheet_values["daily_profit_target"]
+    }
+    update_data_sheet_value("total_profit", total_profit, true, format_value(total_profit, "curr"), false)
+
+    let daily_profit_target_display = 0
+    if (project_type == "large_2") {
+        daily_profit_target_display = data_sheet_values["daily_profit_target"] / 2
+    }
+    else {
+        daily_profit_target_display = data_sheet_values["daily_profit_target"]
+    }
+    update_data_sheet_value("daily_profit_target_display", daily_profit_target_display, true, format_value(daily_profit_target_display, "curr"), false)
+
+    let difference_daily_profit_goal_3 = 0
+    update_data_sheet_value("difference_daily_profit_goal_3", difference_daily_profit_goal_3, true, format_value(difference_daily_profit_goal_3, "curr"), false)
+
 }
 
 function main() {

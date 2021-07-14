@@ -395,7 +395,7 @@
                                 "material4": ["2.5\" Drip Edge", 27, 486],
                                 "material5": ["Cover strip", 3, 162],
                                 "material6": ["Metal patches", 1, 33],
-                                "material7": ["Seperation Sheet", 2, 534]
+                                "material7": ["Separation Sheet", 2, 534]
                             },
                             "large": {
                                 "material1": ["50 mil white", 42, 20244],
@@ -415,7 +415,7 @@
                                 "material4": ["2.5\" Drip Edge", 27, 486],
                                 "material5": ["Cover strip", 3, 162],
                                 "material6": ["Metal patches", 1, 33],
-                                "material7": ["Seperation Sheet", 2, 534]
+                                "material7": ["Separation Sheet", 2, 534]
                             },
                             "large_2": {
                                 "material1": ["50 mil white", 42, 20244],
@@ -485,12 +485,12 @@
                     },
                     "total_materials_cost_display": {
                         "display_name": "Minus Materials",
-                        "formula": "already set",
+                        "formula": "total_materials_cost",
                         "user_interaction": "output"
                     },
                     "total_labor_cost_display": {
                         "display_name": "Minus Labor",
-                        "formula": "already set",
+                        "formula": "total_labor_cost",
                         "user_interaction": "output"
                     },
                     "total_profit_1": {
@@ -551,7 +551,7 @@
                     },
                     "total_profit_2": {
                         "display_name": "TOTAL Profit=",
-                        "formula": "total_price_2 - minus_overhead - total_materials_cost - total_labor_cost ",
+                        "formula": "total_price_2 - minus_overhead - total_materials_cost - total_labor_cost",
                         "user_interaction": "output"
                     },
                     "daily_profit_2": {
