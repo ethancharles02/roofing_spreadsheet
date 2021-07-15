@@ -338,7 +338,7 @@
                     "project_type": {
                         "display_name" : "Project",
                         "user_interaction": "selectbox",
-                        "default_value": "Small Project",
+                        "default_value": "small",
                         "options": {
                             "small": "Small Project",
                             "large": "Large Project",

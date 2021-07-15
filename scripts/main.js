@@ -1,7 +1,8 @@
 // To-Do:
 // Fix Memory Leaks from reset buttons
 
-// Add cookies that will hold the data_sheet_variables_dict and use that if found
+// Add docstrings
+// New inputs taken from cookies don't account for the num_additional_inputs variable
 // Test on different browsers (works on chrome and edge, mozilla firefox caused errors)
 // Separate add_dict_elements into smaller functions
 // Move removal button to a harder to click place or make a confirmation message
@@ -19,12 +20,61 @@ var data_sheet_variables_dict = {}
 
 var additional_inputs = []
 var num_additional_inputs = 0
-var additional_materials = []
-var num_additional_materials = 0
 
 var project_type = "small"
-function update_project_type(event) {
-    project_type = event.target.value
+
+function update_project_type(event="", section_id="project_type_header", subsection_id="inputs", id="project_type", value="small") {
+    if (event != "") {
+        section_id = get_source_id(event.originalEvent.path[2].id)
+        subsection_id = get_original_id(event.originalEvent.path[2].id)
+        id = event.target.id
+        project_type = event.target.value
+    }
+    else {
+        project_type = value
+    }
+
+    data_sheet_variables_dict[section_id][subsection_id]["display_values"][id]["default_value"] = project_type
+    update_data_dict_cookie()
+}
+
+// both cookie functions are pulled from https://www.w3schools.com/js/js_cookies.asp
+// function setCookie(cname, cvalue, exdays) {
+//     const d = new Date();
+//     d.setTime(d.getTime() + (exdays*24*60*60*1000));
+//     let expires = "expires="+ d.toUTCString();
+//     document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+// }
+
+// function getCookie(cname) {
+//     let name = cname + "=";
+//     let decodedCookie = decodeURIComponent(document.cookie);
+//     let ca = decodedCookie.split(';');
+//     for(let i = 0; i <ca.length; i++) {
+//         let c = ca[i];
+//         while (c.charAt(0) == ' ') {
+//         c = c.substring(1);
+//         }
+//         if (c.indexOf(name) == 0) {
+//         return c.substring(name.length, c.length);
+//         }
+//     }
+//     return "";
+// }
+
+function update_data_dict_cookie() {
+    localStorage.setItem("data_sheet_variables_dict", JSON.stringify(data_sheet_variables_dict))
+}
+
+function get_data_dict_cookie() {
+    let cookie = localStorage.getItem("data_sheet_variables_dict")
+
+    if (cookie != null) {
+        return cookie
+    }
+    else {
+        return ""
+    }
 }
 
 /**
@@ -214,9 +264,11 @@ function update_data_sheet_value(id, new_value, update_display_value = false, di
         }
         if (is_material) {
             data_sheet_variables_dict[section_id][subsection_id]["display_values"]["materials"]["default_values"][project_type][id][material_update_index] = new_value
+            update_data_dict_cookie()
         }
         else {
             data_sheet_variables_dict[section_id][subsection_id]["display_values"][id]["default_value"] = new_value
+            update_data_dict_cookie()
         }
     }
 }
@@ -224,9 +276,11 @@ function update_data_sheet_value(id, new_value, update_display_value = false, di
 function update_display_name(id, new_name, section_id = "", subsection_id = "", user_interaction = "") {
     if (user_interaction == "material") {
         data_sheet_variables_dict[section_id][subsection_id]["display_values"]["materials"]["default_values"][project_type][id][0] = new_name
+        update_data_dict_cookie()
     }
     else {
         data_sheet_variables_dict[section_id][subsection_id]["display_values"][id]["display_name"] = new_name
+        update_data_dict_cookie()
     }
 }
 
@@ -567,6 +621,7 @@ function add_input_div(selector, new_id="", button_id="", user_interaction="", l
                 "user_interaction": "input",
                 "format": format
             }
+            update_data_dict_cookie()
         }
         else if (user_interaction == "material") {
             data_sheet_variables_dict[section_id][subsection_id]["display_values"]["materials"]["default_values"][project_type][newid] = [
@@ -574,6 +629,7 @@ function add_input_div(selector, new_id="", button_id="", user_interaction="", l
                 material_count,
                 value
             ]
+            update_data_dict_cookie()
         }
         
         if (user_interaction == "selectbox") {
@@ -589,6 +645,14 @@ function add_input_div(selector, new_id="", button_id="", user_interaction="", l
                 }
             }
             
+            if ("default_value" in data_sheet_variables_dict[section_id][subsection_id]["display_values"][newid]) {
+                select_box.value = data_sheet_variables_dict[section_id][subsection_id]["display_values"][newid]["default_value"]
+                update_project_type("", section_id, subsection_id, newid, select_box.value)
+            }
+            else {
+                select_box.value = "small"
+            }
+
             div.appendChild(select_box)
             document.querySelector("#" + selector).appendChild(div)
             
@@ -730,7 +794,7 @@ function fixed_box_change(event) {
     let subsection_id = get_original_id(event.originalEvent.path[2].id)
 
     data_sheet_variables_dict[section_id][subsection_id]["display_values"][source_id]["default_fixed_value"] = event.target.checked
-
+    update_data_dict_cookie()
     update_outputs()
 }
 
@@ -765,6 +829,7 @@ function reset(event) {
     
     if (source_id == "data_sheet_variables") {
         data_sheet_variables_dict = JSON.parse(JSON.stringify(data_sheet_variables_dict_original))
+        update_data_dict_cookie()
         add_dict_elements("#data_sheet_variables", data_sheet_variables_dict_original)
         update_outputs()
     }
@@ -772,6 +837,7 @@ function reset(event) {
         let section = get_source_id(source_id)
         let section_value = get_original_id(source_id)
         data_sheet_variables_dict[section][section_value] = JSON.parse(JSON.stringify(data_sheet_variables_dict_original[section][section_value]))
+        update_data_dict_cookie()
         add_dict_elements("#data_sheet_variables", data_sheet_variables_dict)
         update_outputs()
     }
@@ -808,7 +874,7 @@ function remove_elements(event) {
 
     // Deletes the information from the corresponding global variables
     if (user_interaction == "material") {
-        let project_type = project_type
+        // let project_type = project_type
 
         delete data_sheet_values[source_id]
         delete data_sheet_values[source_id + "_count"]
@@ -816,6 +882,7 @@ function remove_elements(event) {
         section_values[section_id][subsection_id][project_type].splice(section_values[section_id][subsection_id][project_type].indexOf(source_id), 1)
         
         delete data_sheet_variables_dict[section_id][subsection_id]["display_values"]["materials"]["default_values"][project_type][source_id]
+        update_data_dict_cookie()
         
         if (additional_inputs.includes(source_id)) {
             additional_inputs.splice(additional_inputs.indexOf(source_id), 1)
@@ -828,6 +895,7 @@ function remove_elements(event) {
         delete data_sheet_values[source_id]
         section_values[section_id][subsection_id].splice(section_values[section_id][subsection_id].indexOf(source_id), 1)
         delete data_sheet_variables_dict[section_id][subsection_id]["display_values"][source_id]
+        update_data_dict_cookie()
         if (additional_inputs.includes(source_id)) {
             additional_inputs.splice(additional_inputs.indexOf(source_id), 1)
         }
@@ -1085,9 +1153,11 @@ function update_outputs(event=[]) {
         if (section_id == "annual_roofing_days") {
             if (subsection_id == "inputs") {
                 data_sheet_variables_dict["annual_roofing_days"]["outputs"]["display_values"]["total_roofing_days"]["total_up_months"] = true
+                update_data_dict_cookie()
             }
             else if (subsection_id == "outputs") {
                 data_sheet_variables_dict["annual_roofing_days"]["outputs"]["display_values"]["total_roofing_days"]["total_up_months"] = false
+                update_data_dict_cookie()
             }
         }
     }
@@ -1357,7 +1427,15 @@ function main() {
     })
     .then(data => {
         data_sheet_variables_dict_original = data[0]
-        data_sheet_variables_dict = JSON.parse(JSON.stringify(data[0]))
+
+        data_sheet_variables_dict = get_data_dict_cookie()
+        if (data_sheet_variables_dict != "") {
+            data_sheet_variables_dict = JSON.parse(data_sheet_variables_dict)
+        }
+        else {
+            data_sheet_variables_dict = JSON.parse(JSON.stringify(data[0]))
+        }
+
         add_dict_elements("#data_sheet_variables", data_sheet_variables_dict)
         update_outputs()
     })
