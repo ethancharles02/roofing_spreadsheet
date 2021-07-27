@@ -2,8 +2,6 @@
 // Fix Memory Leaks from reset buttons
 
 // Add docstrings
-// Test on different browsers (works on chrome and edge, mozilla firefox caused errors)
-    // Firefox caused errors due to event.path not existing, the original to this is event.composedPath() which does work
 // Edge gives warnings that might be worth fixing
 // Separate add_dict_elements into smaller functions
 // Move removal button to a harder to click place or make a confirmation message
@@ -24,6 +22,14 @@ var num_additional_inputs = 0
 
 var project_type = "small"
 
+/**
+ * Updates the global project_type variable to the current project type
+ * @param {object} [event=""] The event given from a jquery input, if anything is given other than an empty string, this will be used instead of the other parameters
+ * @param {string} [section_id="project_type_header"] The section id
+ * @param {string} [subsection_id="inputs"] The subsection id
+ * @param {string} [id="project_type"] The id of the project type selector
+ * @param {string} [value="small"] The project type to set
+ */
 function update_project_type(event="", section_id="project_type_header", subsection_id="inputs", id="project_type", value="small") {
     if (event != "") {
         section_id = get_source_id(event.originalEvent.composedPath()[2].id)
@@ -39,34 +45,17 @@ function update_project_type(event="", section_id="project_type_header", subsect
     update_data_dict_cookie()
 }
 
-// both cookie functions are pulled from https://www.w3schools.com/js/js_cookies.asp
-// function setCookie(cname, cvalue, exdays) {
-//     const d = new Date();
-//     d.setTime(d.getTime() + (exdays*24*60*60*1000));
-//     let expires = "expires="+ d.toUTCString();
-//     document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
-// }
-
-// function getCookie(cname) {
-//     let name = cname + "=";
-//     let decodedCookie = decodeURIComponent(document.cookie);
-//     let ca = decodedCookie.split(';');
-//     for(let i = 0; i <ca.length; i++) {
-//         let c = ca[i];
-//         while (c.charAt(0) == ' ') {
-//         c = c.substring(1);
-//         }
-//         if (c.indexOf(name) == 0) {
-//         return c.substring(name.length, c.length);
-//         }
-//     }
-//     return "";
-// }
-
+/**
+ * Updates the cookie that holds data with the current data
+ */
 function update_data_dict_cookie() {
     localStorage.setItem("data_sheet_variables_dict", JSON.stringify(data_sheet_variables_dict))
 }
 
+/**
+ * Gets the cookie
+ * @returns {string} the cookie which may need to be converted to an object with JSON.parse
+ */
 function get_data_dict_cookie() {
     let cookie = localStorage.getItem("data_sheet_variables_dict")
 
@@ -83,6 +72,7 @@ function get_data_dict_cookie() {
  * @param {string} id The id of the input box (without the #)
  * @param {string} event The event that will trigger the function (ie. blur, input, focus)
  * @param {function} func The function that gets triggered
+ * @param {*} additional_args The additional arguments to be passed to the event
  */
 function add_query_on_input(id, event, func, additional_args) {
     // Adds a query onto the element with the given id
@@ -98,6 +88,13 @@ function add_query_on_change(id, func) {
     jQuery("#" + id).change(func)
 }
 
+/**
+ * Gets the user interaction of a specific section in the data_sheet_variables_dict
+ * @param {string} section_id The section id
+ * @param {string} subsection_id The subsection id
+ * @param {string} default_interaction The default user interaction if there isn't one available
+ * @returns {string} the user_interaction
+ */
 function get_user_interaction(section_id, subsection_id, default_interaction = "") {
     let user_interaction = default_interaction
     if ("user_interaction" in data_sheet_variables_dict[section_id][subsection_id]) {
@@ -108,6 +105,11 @@ function get_user_interaction(section_id, subsection_id, default_interaction = "
 }
 
 // Function from Elias Zamaria, edited by T.J. Crowder
+/**
+ * Converts a number to a string with commas in every thousands place
+ * @param {(string|float)} x The number to be converted
+ * @returns {string} the number with commas added at every thousands place
+ */
 function numberWithCommas(x) {
     return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
@@ -115,7 +117,7 @@ function numberWithCommas(x) {
 /**
  * Formats a given value into a currency format, the value is expected to already be a valid number (string or float)
  * @param {(string|float)} value The value to be formatted
- * @param {string} [format="float"] The format to be used for the value, defaults to curr (currency), also accepts "int" and "perc"
+ * @param {string} [format="float"] The format to be used for the value, accepts "int", "perc", "float", and "curr"
  * @returns {string} The formatted value with a dollar sign in front and to two decimal places
  */
 function format_value(value, format="float") {
@@ -235,6 +237,7 @@ function set_label_editable(label_id, parent_container) {
  * @param {boolean} update_dict if true, it will update data_sheet_variables_dict with the new value
  * @param {string} section_id section id in the dict (ie. monthly_overhead)
  * @param {string} subsection_id subsection id (ie. inputs)
+ * @param {string} user_interaction the user interaction with this data sheet value
  */
 function update_data_sheet_value(id, new_value, update_display_value = false, display_value = "", update_dict = true, section_id = "", subsection_id = "", user_interaction = "") {
     data_sheet_values[id] = new_value
@@ -274,6 +277,14 @@ function update_data_sheet_value(id, new_value, update_display_value = false, di
     }
 }
 
+/**
+ * Updates the display name of an element
+ * @param {string} id The id of the element to have its name changed
+ * @param {string} new_name The new name for the element
+ * @param {string} [section_id=""] The section_id
+ * @param {string} [subsection_id=""] The subsection_id
+ * @param {string} [user_interaction=""] The user_interaction. This is only really used for materials which have a different path
+ */
 function update_display_name(id, new_name, section_id = "", subsection_id = "", user_interaction = "") {
     if (user_interaction == "material") {
         data_sheet_variables_dict[section_id][subsection_id]["display_values"]["materials"]["default_values"][project_type][id][0] = new_name
@@ -285,6 +296,10 @@ function update_display_name(id, new_name, section_id = "", subsection_id = "", 
     }
 }
 
+/**
+ * Updates the materials section with the selected materials list based on the project type
+ * @param {object} event The given event from a jquery input
+ */
 function update_materials(event) {
     // let user_interaction_temp = event.data["user_interaction_temp"]
     // let show_fixed_box_temp = event.data["show_fixed_box_temp"]
@@ -425,11 +440,11 @@ function focus_input(event) {
 /**
  * Creates a new input based on given values
  * @param {string} id The id that will be used as the id for the input
- * @param {string} [name=id] The name that will be used for the input name, defaults to the id
- * @param {string} [type="text"] Type specifies what the input box's type will be. Defaults to "text"
- * @param {(string|float)} [value=0] Value decides what the default value for the input will be set to. Defaults to 0
+ * @param {string} [name=id] The name that will be used for the input name
+ * @param {string} [type="text"] Type specifies what the input box's type will be
+ * @param {(string|float)} [value=0] Value decides what the default value for the input will be set to
  * @param {boolean} [format=true] Format decides whether to format the value or not
- * @param {string} [format_type="float"] Format_type is the format that will be used with the format_value formula. Defaults to "curr" 
+ * @param {string} [format_type="float"] Format_type is the format that will be used with the format_value formula
 */
 function create_input(id, name=id, type="text", value=0, format=true, format_type="float") {
     let input = document.createElement("input")
@@ -475,16 +490,28 @@ function get_source_id(id, iterations=1) {
 }
 
 /**
- * 
+ * Gets the last part of an id
  * @param {string} id 
- * @returns Returns the last part of an id, ie. "test_string" would return "string"
+ * @returns {string} the last part of an id, ie. "test_string" would return "string"
  */
 function get_original_id(id) {
     return id.substring(id.lastIndexOf("_") + 1)
 }
 
 /**
- * 
+ * Creates a div container which holds different elements based on the parameters set here
+ * @param {string} selector The combination of section_id and subsection_id. This is where the div will be appended. ie. "monthly_overhead_inputs" 
+ * @param {string} new_id The new id for the element which holds a value in it. The input box for instance
+ * @param {string} button_id The id for the New Input button. If this is given, the element will be added on before this instead of at the end of the container
+ * @param {string} user_interaction The user_interaction, ie. "input"
+ * @param {string} label_content The name for the initial label, ie. "Rent"
+ * @param {float} value The value inside of the input box
+ * @param {boolean} show_fixed_box Shows the box which allows the user to select Fixed or not
+ * @param {boolean} default_fixed_value The default fixed value which applies whether or not the fixed box is shown
+ * @param {string} format Format which applies to the value, ie. "float"
+ * @param {string} allow_label_editing Allows the display label to be edited
+ * @param {string} allow_removal Shows a removal button which will delete the div if clicked
+ * @param {float} material_count The number of a material if the user_interaction is "material"
  */
 function add_input_div(selector, new_id="", button_id="", user_interaction="", label_content="Misc", value=0, show_fixed_box=false, default_fixed_value=true, format="", allow_label_editing="", allow_removal="", material_count=0) {
     let section_id = get_source_id(selector)
@@ -725,6 +752,8 @@ function add_input_div(selector, new_id="", button_id="", user_interaction="", l
  * Adds a new input onto the end of a selector, moving the button to the end of that section
  * @param {string} selector The selector to add the new input onto
  * @param {string} button_id The button id so that the new input div can be inserted before the button
+ * @param {string} default_display_name Default display name for new values
+ * @param {boolean} show_fixed_box Shows the box which can be selected or not for fixed values
  */
 function add_input_div_from_button(selector, button_id, default_display_name="Misc", show_fixed_box=false) {
     add_input_div(selector, "", button_id, "", default_display_name, 0, show_fixed_box)
@@ -767,7 +796,7 @@ function add_new_elements_from_input_button(event) {
  * @param {Element} div The div element to add onto
  * @param {string} section The corresponding section value (ie. monthly_overhead)
  * @param {string} section_value The corresponding subsection value for the section (ie. inputs)
- * @param {string} text The text to be added next to the fixed box
+ * @param {string} [text="Fixed:"] The text to be added next to the fixed box
  */
 function add_fixed_box(orig_id, div, section, section_value, text="Fixed:") {
     let fixed_label = document.createElement("label")
@@ -802,7 +831,7 @@ function fixed_box_change(event) {
 /**
  * 
  * @param {string} source_id id of the section, ie. rent
- * @returns button element to remove the elements of the container that button is in
+ * @returns {object} button element to remove the elements of the container that button is in
  */
 function create_removal_button(source_id) {
     let button = document.createElement("button")
@@ -848,7 +877,7 @@ function reset(event) {
  * Creates a reset button with the id + _resetbutton as the id
  * @param {string} source_id The parent container id
  * @param {string} [text="Reset"] The text to be displayed on the button
- * @returns 
+ * @returns {object} Button for resetting objects
  */
 function create_reset_button(source_id, text="Reset") {
     let button = document.createElement("button")
@@ -1074,25 +1103,6 @@ function add_dict_elements(selector, dict) {
                         }}
 
                         update_materials(data)
-                        // for (let material in dict[section][section_value]["display_values"][key]["default_values"]["small"]) {
-                        //     let material_object = dict[section][section_value]["display_values"][key]["default_values"]["small"]
-                        //     let material_name = material_object[material][0]
-                        //     let material_count = material_object[material][1]
-                        //     let material_value = material_object[material][2]
-                        //     add_input_div(
-                        //         article_id,
-                        //         material,
-                        //         "",
-                        //         user_interaction_temp,
-                        //         material_name,
-                        //         material_value,
-                        //         show_fixed_box_temp,
-                        //         default_fixed_value,
-                        //         format_temp,
-                        //         allow_label_editing_temp,
-                        //         allow_removal_temp,
-                        //         material_count)
-                        // }
                     }
 
                     else {
@@ -1132,6 +1142,10 @@ function add_dict_elements(selector, dict) {
     document.querySelector("#data_sheet_variables").appendChild(button)
 }
 
+/**
+ * Runs each of the update functions for updating outputs
+ * @param {object} event The event given from jquery
+ */
 function update_outputs(event=[]) {
 
     let func_list = [
