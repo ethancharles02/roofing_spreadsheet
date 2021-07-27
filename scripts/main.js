@@ -2,8 +2,9 @@
 // Fix Memory Leaks from reset buttons
 
 // Add docstrings
-// New inputs taken from cookies don't account for the num_additional_inputs variable
 // Test on different browsers (works on chrome and edge, mozilla firefox caused errors)
+    // Firefox caused errors due to event.path not existing, the original to this is event.composedPath() which does work
+// Edge gives warnings that might be worth fixing
 // Separate add_dict_elements into smaller functions
 // Move removal button to a harder to click place or make a confirmation message
 // Make enter and the down/up arrow select input boxes below or above
@@ -25,8 +26,8 @@ var project_type = "small"
 
 function update_project_type(event="", section_id="project_type_header", subsection_id="inputs", id="project_type", value="small") {
     if (event != "") {
-        section_id = get_source_id(event.originalEvent.path[2].id)
-        subsection_id = get_original_id(event.originalEvent.path[2].id)
+        section_id = get_source_id(event.originalEvent.composedPath()[2].id)
+        subsection_id = get_original_id(event.originalEvent.composedPath()[2].id)
         id = event.target.id
         project_type = event.target.value
     }
@@ -182,8 +183,8 @@ function hide_label_input(event) {
     
     let new_value = document.querySelector("#" + input_id).value
 
-    let section_id = get_source_id(event.originalEvent.path[2].id)
-    let subsection_id = get_original_id(event.originalEvent.path[2].id)
+    let section_id = get_source_id(event.originalEvent.composedPath()[2].id)
+    let subsection_id = get_original_id(event.originalEvent.composedPath()[2].id)
     update_display_name(get_source_id(label_id), new_value, section_id, subsection_id)
     // data_sheet_variables_dict[section_id][subsection_id]["display_values"][get_source_id(label_id)]["display_name"] = new_value
 
@@ -349,8 +350,8 @@ function restrict_input(event) {
     let value = event.target.value
     let target_id = event.target.id
 
-    let section_id = get_source_id(event.originalEvent.path[2].id)
-    let subsection_id = get_original_id(event.originalEvent.path[2].id)
+    let section_id = get_source_id(event.originalEvent.composedPath()[2].id)
+    let subsection_id = get_original_id(event.originalEvent.composedPath()[2].id)
 
     let user_interaction = get_user_interaction(section_id, subsection_id)
     // if ("user_interaction" in data_sheet_variables_dict[section_id][subsection_id]) {
@@ -735,7 +736,7 @@ function add_input_div_from_button(selector, button_id, default_display_name="Mi
  * @param {object} event 
  */
 function add_new_elements_from_input_button(event) {
-    let selector = event.path[1].id
+    let selector = event.composedPath()[1].id
 
     let section_id = get_source_id(selector)
     let subsection_id = get_original_id(selector)
@@ -790,8 +791,8 @@ function add_fixed_box(orig_id, div, section, section_value, text="Fixed:") {
 function fixed_box_change(event) {
     // Gets id information
     let source_id = get_source_id(event.target.id)
-    let section_id = get_source_id(event.originalEvent.path[2].id)
-    let subsection_id = get_original_id(event.originalEvent.path[2].id)
+    let section_id = get_source_id(event.originalEvent.composedPath()[2].id)
+    let subsection_id = get_original_id(event.originalEvent.composedPath()[2].id)
 
     data_sheet_variables_dict[section_id][subsection_id]["display_values"][source_id]["default_fixed_value"] = event.target.checked
     update_data_dict_cookie()
@@ -867,8 +868,8 @@ function create_reset_button(source_id, text="Reset") {
 function remove_elements(event) {
     // Gets id information
     let source_id = get_source_id(event.target.id)
-    let section_id = get_source_id(event.path[2].id)
-    let subsection_id = get_original_id(event.path[2].id)
+    let section_id = get_source_id(event.composedPath()[2].id)
+    let subsection_id = get_original_id(event.composedPath()[2].id)
 
     let user_interaction = get_user_interaction(section_id, subsection_id)
 
@@ -1147,8 +1148,8 @@ function update_outputs(event=[]) {
     ]
     
     if ("data" in event) {
-        let section_id = get_source_id(event.originalEvent.path[2].id)
-        let subsection_id = get_original_id(event.originalEvent.path[2].id)
+        let section_id = get_source_id(event.originalEvent.composedPath()[2].id)
+        let subsection_id = get_original_id(event.originalEvent.composedPath()[2].id)
 
         if (section_id == "annual_roofing_days") {
             if (subsection_id == "inputs") {
@@ -1437,6 +1438,23 @@ function main() {
         }
 
         add_dict_elements("#data_sheet_variables", data_sheet_variables_dict)
+
+        // Finds the largest new_input value and sets num_additional_inputs to it
+        // since IDs have to be unique
+        let largest_num_additional_inputs = 0
+        for (let value in data_sheet_values) {
+            if (get_source_id(value) == "new_input") {
+                let new_input_num = parseInt(get_original_id(value))
+                if (new_input_num + 1 > largest_num_additional_inputs) {
+                    largest_num_additional_inputs = new_input_num + 1
+                }
+            }
+        }
+
+        if (largest_num_additional_inputs > num_additional_inputs) {
+            num_additional_inputs = largest_num_additional_inputs
+        }
+
         update_outputs()
     })
 }
