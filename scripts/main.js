@@ -8,7 +8,7 @@
 // Materials may need information injected from another source so that users can choose from the current stock
 
 // Default parameters won't work on internet explorer (create message that shows up if someone is using internet explorer?)
-// test
+
 'use strict'
 
 var data_sheet_values = {}
