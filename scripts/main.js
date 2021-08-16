@@ -187,7 +187,10 @@ function hide_label_input(event) {
 
     let section_id = get_source_id(event.originalEvent.composedPath()[2].id)
     let subsection_id = get_original_id(event.originalEvent.composedPath()[2].id)
-    update_display_name(get_source_id(label_id), new_value, section_id, subsection_id)
+    
+    let user_interaction = get_user_interaction(section_id, subsection_id)
+
+    update_display_name(get_source_id(label_id), new_value, section_id, subsection_id, user_interaction)
     // data_sheet_variables_dict[section_id][subsection_id]["display_values"][get_source_id(label_id)]["display_name"] = new_value
 
     document.querySelector("#" + label_id).textContent = new_value
