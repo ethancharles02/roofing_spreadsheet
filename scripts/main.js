@@ -408,7 +408,7 @@ function restrict_input(event) {
                 update_data_sheet_value(target_id, parseFloat(value), false, "", true, section_id, subsection_id, user_interaction)
             }
             else {
-                update_data_sheet_value(target_id, parseFloat(value).toFixed(2), false, "", true, section_id, subsection_id, user_interaction)
+                update_data_sheet_value(target_id, parseFloat(parseFloat(value).toFixed(2)), false, "", true, section_id, subsection_id, user_interaction)
             }
             // data_sheet_values[target_id] = parseFloat(value).toFixed(2)
         }
