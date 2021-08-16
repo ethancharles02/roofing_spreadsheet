@@ -1,7 +1,6 @@
 // To-Do:
 // Fix Memory Leaks from reset buttons
 
-// Add docstrings
 // Edge gives warnings that might be worth fixing
 // Separate add_dict_elements into smaller functions
 // Move removal button to a harder to click place or make a confirmation message
