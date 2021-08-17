@@ -91,6 +91,10 @@ input {
     display: grid;
 }
 
+.label {
+    margin-right: 20px;
+}
+
 /* media queries */
 @media only screen and (min-width: 32.5em) {
     nav ul {

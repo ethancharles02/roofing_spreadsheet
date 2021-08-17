@@ -583,11 +583,13 @@ function add_input_div(selector, new_id="", button_id="", user_interaction="", l
     let label = document.createElement("label")
     label.for = newid
 
+    label.classList.add("label")
+    
     if (allow_label_editing) {
         label.id = newid + "_label"
     }
 
-    label.textContent = label_content
+    label.textContent = label_content + ":"
     div.appendChild(label)
 
     // if (user_interaction == "input") {
@@ -1293,7 +1295,7 @@ function update_daily_costs_outputs() {
 
 function update_labor_costs_outputs() {
     let total_labor_cost = data_sheet_values["total_days"] * data_sheet_values["daily_crew_labor_cost"]
-    update_data_sheet_value("total_labor_cost", total_labor_cost, true, format_value(total_labor_cost, "float"), false)
+    update_data_sheet_value("total_labor_cost", total_labor_cost, true, format_value(total_labor_cost, "curr"), false)
 }
 
 function update_materials_outputs() {
@@ -1350,10 +1352,10 @@ function update_materials_labor_outputs() {
     let material_x2 = data_sheet_values["total_materials_cost"] * 2
     update_data_sheet_value("material_x2", material_x2, true, format_value(material_x2, "curr"), false)
     
-    let new_material = data_sheet_values["material_x2"] * 0.014
+    let new_material = data_sheet_values["material_x2"] * 1.4
     update_data_sheet_value("new_material", new_material, true, format_value(new_material, "curr"), false)
 
-    let total_price_2 = data_sheet_values["new_material"] + data_sheet_values["material_x2"]
+    let total_price_2 = data_sheet_values["new_material"]
     update_data_sheet_value("total_price_2", total_price_2, true, format_value(total_price_2, "curr"), false)
 
     let minus_overhead_display = data_sheet_values["minus_overhead"]

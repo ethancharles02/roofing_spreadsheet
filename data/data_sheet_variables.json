@@ -523,8 +523,8 @@
                         "user_interaction": "output"
                     },
                     "new_material": {
-                        "display_name": "New Material $ x 1.4",
-                        "formula": "material_x2 * 0.014",
+                        "display_name": "x 1.4",
+                        "formula": "material_x2 * 1.4",
                         "user_interaction": "output"
                     },
                     "total_price_2": {
